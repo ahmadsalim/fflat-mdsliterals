@@ -17,6 +17,18 @@ let commentStart = ref Position.Empty;
  
 let commentDepth = ref 0;  (* Current comment nesting *)
 
+let currStr = System.Text.StringBuilder()
+
+let escapeChar c =
+    match c with
+    | '\\' -> "\\"
+    | 'n'  -> "\n"
+    | 'r'  -> "\r"
+    | 't'  -> "\t"
+    | 'f'  -> "\f"
+    | '\"'  -> "\""
+    | _    -> failwithf "Lexer error: Unknow escape %A character in string" c
+
 (* Distinguish keywords from identifiers: *)
 
 let keyword s =
@@ -44,6 +56,7 @@ rule Token = parse
   | "(*"            { commentStart := lexbuf.StartPos;
                       commentDepth := 1; 
                       SkipComment lexbuf; Token lexbuf }
+  | "\""            { ignore <| currStr.Clear(); ParseString lexbuf }
   | '='             { EQ }
   | "<>"            { NE }
   | '>'             { GT }
@@ -57,6 +70,7 @@ rule Token = parse
   | '%'             { MOD }
   | '('             { LPAR }
   | ')'             { RPAR }
+  | '^'             { HAT }
   | "->"            { ARROW }
   | eof             { EOF }
   | _               { failwith "Lexer error: illegal symbol" }
@@ -70,4 +84,15 @@ and SkipComment = parse
                       SkipComment lexbuf }
    | eof            { failwith "Lexer error: unterminated comment" }
    | _              { SkipComment lexbuf }
+
+and ParseString = parse
+   | "\""           { CSTSTR (currStr.ToString()) }
+   | eof            { failwith "Lexer error: unterminated string"   }
+   | "\\" _         { ignore <| currStr.Append(escapeChar (lexbuf.LexemeChar 1)); 
+                      ParseString lexbuf
+                    }
+   | _              { ignore <| currStr.Append(lexemeAsString lexbuf);
+                      ParseString lexbuf
+                    }
+   
 

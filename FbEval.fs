@@ -42,6 +42,7 @@ let rec eval (e : expr) (env : value env) : value =
            | ("<=", Val(v1)    , Val(v2))     -> Val(Bool(v1 <= v2))
            | (">" , Val(v1)    , Val(v2))     -> Val(Bool(v1 > v2))
            | (">=", Val(v1)    , Val(v2))     -> Val(Bool(v1 >= v2))
+           | ("^",  Val(Str s1), Val(Str s2)) -> Val(Str(s1 + s2))
            |  _ -> failwith "unknown primitive or wrong type"
       | Let(x, eRhs, letBody) -> 
         let xVal = eval eRhs env

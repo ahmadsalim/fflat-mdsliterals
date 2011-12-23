@@ -10,6 +10,7 @@ open FbAst
 (* Environment operations *)
 
 type 'v env = (string * 'v) list
+type 'v lazyenv = (string * 'v) LazyList
 
 let rec lookup env x =
     match env with 
@@ -20,8 +21,8 @@ let rec lookup env x =
 
 type value = 
   | Val of valtype
-  | Closure of string * string * expr * value env       (* (f, x, fBody, fDeclEnv) *)
-  | AnonymousClosure of string * expr * value env       (* (x, body, declEnv)      *)
+  | Closure of string * string * expr * value lazyenv  (* (f, x, fBody, fDeclEnv) *)
+  | AnonymousClosure of string * expr * value env      (* (x, body, declEnv)      *)
 
 let rec eval (e : expr) (env : value env) : value =
     match e with
@@ -45,25 +46,27 @@ let rec eval (e : expr) (env : value env) : value =
       | Let(x, eRhs, letBody) -> 
         let xVal = eval eRhs env
         let letEnv = (x, xVal) :: env 
-        in eval letBody letEnv
+        eval letBody letEnv
       | If(e1, e2, e3) -> 
         match eval e1 env with
           | Val(Bool(true))   -> eval e2 env
           | Val(Bool(false))  -> eval e3 env
           | _  -> failwith "evaluation condition in if statement did not return a boolean value"
-      | Letfun(f, x, fBody, letBody) -> 
-        let bodyEnv = (f, Closure(f, x, fBody, env)) :: env
-        in eval letBody bodyEnv
+      | Letfuns(funs, letBody) -> 
+        let rec funEnv = LazyList.map (fun (f, x, fBody) -> 
+            (f, Closure(f, x, fBody, LazyList.append funEnv 
+                                     <| LazyList.ofList env))) <| LazyList.ofList funs
+        eval letBody <| (LazyList.toList funEnv) @ env
       | Fun(x, body) ->
         AnonymousClosure(x, body, env)
       | Call(eFun, eArg) -> 
         let fClosure = eval eFun env
-        in match fClosure with
+        match fClosure with
            | Closure (f, x, fBody, fDeclEnv) ->
              let xVal = eval eArg env
-             let fBodyEnv = (x, xVal) :: (f, fClosure) :: fDeclEnv
-             in eval fBody fBodyEnv
+             let fBodyEnv = (x, xVal) :: (f, fClosure) :: (LazyList.toList fDeclEnv)
+             eval fBody fBodyEnv
            | AnonymousClosure(x, body, declEnv) ->
              let xVal = eval eArg env
-             in eval body <| (x, xVal)::declEnv
+             eval body <| (x, xVal)::declEnv
            | _ -> failwith "eval Call: not a function";;

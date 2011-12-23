@@ -42,17 +42,18 @@ type expr =
   | Let of string * expr * expr
   | Prim of string * expr * expr
   | If of expr * expr * expr
-  | Letfun of string * string * expr * expr    (* (f, x, fBody, letBody) *)
+  | Letfuns of (string * string * expr) list * expr    (* (f, x, fBody, letBody) *)
   | Fun of string * expr
   | Call of expr * expr
 
 (** Smart constuctors for epxr **)
-let mkLetFun name args fBody letBody =
+
+let mkLetfun name args fBody =
     match args with
     | []        -> failwith "Illegal function with no arguments"
     | arg::argr -> 
         let innerFun = List.foldBack (fun a f -> Fun(a, f)) argr fBody
-        Letfun(name, arg, innerFun, letBody)
+        (name, arg, innerFun)
 
 let mkFun args fBody =
     match args with

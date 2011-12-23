@@ -11,7 +11,7 @@
 %token <string> NAME
 %token <bool> CSTBOOL
 
-%token ELSE END FALSE IF IN LET NOT THEN TRUE
+%token ELSE END FALSE IF IN LET NOT THEN TRUE AND
 %token FUN ARROW
 %token PLUS MINUS TIMES DIV MOD
 %token EQ NE GT LT GE LE
@@ -59,11 +59,20 @@ Expr:
   | Expr LE    Expr                     { Prim("<=", $1, $3)        }
 ;
 
+FunBinding:
+    | NAME ArgList EQ Expr              { mkLetfun $1 $2 $4      }
+;
+
+FunBindings:
+    | FunBinding                        { $1::[]                 }
+    | FunBinding AND FunBindings	    { $1::$3                 }
+;
+
 AtExpr:
     Const                               { $1                     }
   | NAME                                { Var $1                 }
   | LET NAME EQ Expr IN Expr END        { Let($2, $4, $6)        }
-  | LET NAME ArgList EQ Expr IN Expr END{ mkLetFun $2 $3 $5 $7   }
+  | LET FunBindings IN Expr END         { Letfuns($2, $4)        }
   | LPAR Expr RPAR                      { $2                     }
 ;
 

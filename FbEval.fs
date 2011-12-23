@@ -65,7 +65,7 @@ let rec eval (e : expr) (env : value env) : value =
         match fClosure with
            | Closure (f, x, fBody, fDeclEnv) ->
              let xVal = eval eArg env
-             let fBodyEnv = (x, xVal) :: (f, fClosure) :: (LazyList.toList fDeclEnv)
+             let fBodyEnv = (x, xVal)::(LazyList.toList fDeclEnv)
              eval fBody fBodyEnv
            | AnonymousClosure(x, body, declEnv) ->
              let xVal = eval eArg env

@@ -17,7 +17,7 @@
 %token FUN ARROW
 %token PLUS MINUS TIMES DIV MOD
 %token EQ NE GT LT GE LE
-%token LPAR RPAR 
+%token LPAR RPAR COMMA
 %token EOF
 
 %right ARROW
@@ -25,6 +25,7 @@
 %left EQ NE 
 %nonassoc GT LT GE LE
 %left PLUS MINUS
+%left HAT
 %left TIMES DIV MOD 
 %nonassoc NOT           /* highest precedence  */
 

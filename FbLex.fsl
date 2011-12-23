@@ -17,7 +17,7 @@ let commentStart = ref Position.Empty;
  
 let commentDepth = ref 0;  (* Current comment nesting *)
 
-let currStr = System.Text.StringBuilder()
+let getType (str:string) = str.Substring(1, str.Length - 2)
 
 let escapeChar c =
     match c with
@@ -48,32 +48,36 @@ let keyword s =
 }
 
 rule Token = parse
-  | [' ' '\t' '\r'] { Token lexbuf }
-  | '\n'            { lexbuf.EndPos <- lexbuf.EndPos.NextLine; Token lexbuf }
-  | ['0'-'9']+      { CSTINT (System.Int32.Parse (lexemeAsString lexbuf)) }
+  | [' ' '\t' '\r']           { Token lexbuf }
+  | '\n'                      { lexbuf.EndPos <- lexbuf.EndPos.NextLine; Token lexbuf }
+  | ['0'-'9']+                { CSTINT (System.Int32.Parse (lexemeAsString lexbuf)) }
   | ['a'-'z''A'-'Z']['a'-'z''A'-'Z''0'-'9']*
-                    { keyword (lexemeAsString lexbuf) }
-  | "(*"            { commentStart := lexbuf.StartPos;
-                      commentDepth := 1; 
-                      SkipComment lexbuf; Token lexbuf }
-  | "\""            { ignore <| currStr.Clear(); ParseString lexbuf }
-  | '='             { EQ }
-  | "<>"            { NE }
-  | '>'             { GT }
-  | '<'             { LT }
-  | ">="            { GE }
-  | "<="            { LE }
-  | '+'             { PLUS }                     
-  | '-'             { MINUS }                     
-  | '*'             { TIMES }                     
-  | '/'             { DIV }                     
-  | '%'             { MOD }
-  | '('             { LPAR }
-  | ')'             { RPAR }
-  | '^'             { HAT }
-  | "->"            { ARROW }
-  | eof             { EOF }
-  | _               { failwith "Lexer error: illegal symbol" }
+                              { keyword (lexemeAsString lexbuf) }
+  | "(*"                      { commentStart := lexbuf.StartPos;
+                                commentDepth := 1; 
+                                SkipComment lexbuf; 
+                                Token lexbuf 
+                              }
+  | "\""                      { ParseString (System.Text.StringBuilder()) lexbuf }
+  | '%' ['a'-'z']+  '{'       { ParseStrdLit (getType (lexemeAsString lexbuf))
+                                                (System.Text.StringBuilder()) lexbuf }
+  | '='                       { EQ }
+  | "<>"                      { NE }
+  | '>'                       { GT }
+  | '<'                       { LT }
+  | ">="                      { GE }
+  | "<="                      { LE }
+  | '+'                       { PLUS }                     
+  | '-'                       { MINUS }                     
+  | '*'                       { TIMES }                     
+  | '/'                       { DIV }                     
+  | '%'                       { MOD }
+  | '('                       { LPAR }
+  | ')'                       { RPAR }
+  | '^'                       { HAT }
+  | "->"                      { ARROW }
+  | eof                       { EOF }
+  | _                         { failwith "Lexer error: illegal symbol" }
 
 and SkipComment = parse
     "*)"            { commentDepth := !commentDepth - 1;  
@@ -85,14 +89,24 @@ and SkipComment = parse
    | eof            { failwith "Lexer error: unterminated comment" }
    | _              { SkipComment lexbuf }
 
-and ParseString = parse
+and ParseString currStr = parse
    | "\""           { CSTSTR (currStr.ToString()) }
    | eof            { failwith "Lexer error: unterminated string"   }
    | "\\" _         { ignore <| currStr.Append(escapeChar (lexbuf.LexemeChar 1)); 
-                      ParseString lexbuf
+                      ParseString currStr lexbuf
                     }
    | _              { ignore <| currStr.Append(lexemeAsString lexbuf);
-                      ParseString lexbuf
+                      ParseString currStr lexbuf
                     }
-   
-
+and ParseStrdLit t currStr = parse
+   | "{{"           { ignore <| currStr.Append("{");
+                      ParseStrdLit t currStr lexbuf  
+                    }
+   | "}}"           { ignore <| currStr.Append("}");
+                      ParseStrdLit t currStr lexbuf  
+                    }
+   | "}"            { STRDLIT(t, currStr.ToString()) }
+   | "{"            { failwith "Lexer error: unexpected unescaped { in data literal" }
+   | _              { ignore <| currStr.Append(lexemeAsString lexbuf);
+                      ParseStrdLit t currStr lexbuf
+                    }

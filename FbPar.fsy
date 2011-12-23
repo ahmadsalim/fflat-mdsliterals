@@ -10,7 +10,7 @@
 %token <int> CSTINT
 %token <bool> CSTBOOL
 %token <string> CSTSTR
-
+%token <string * string> STRDLIT
 %token <string> NAME
 
 %token ELSE END FALSE IF IN LET NOT THEN TRUE AND HAT
@@ -60,15 +60,16 @@ Expr:
   | Expr GE    Expr                     { Prim(">=", $1, $3)        }
   | Expr LE    Expr                     { Prim("<=", $1, $3)        }
   | Expr HAT   Expr                     { Prim("^",  $1, $3)        }
+  | STRDLIT                             { StrdLit $1                }
 ;
 
 FunBinding:
-  | NAME ArgList EQ Expr              { mkLetfun $1 $2 $4      }
+  | NAME ArgList EQ Expr                { mkLetfun $1 $2 $4      }
 ;
 
 FunBindings:
-  | FunBinding                        { $1::[]                 }
-  | FunBinding AND FunBindings	      { $1::$3                 }
+  | FunBinding                          { $1::[]                 }
+  | FunBinding AND FunBindings	        { $1::$3                 }
 ;
 
 AtExpr:

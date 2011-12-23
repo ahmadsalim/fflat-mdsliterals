@@ -2,7 +2,7 @@
     Intepreter for the Fb programming language
     Original Author: Peter Sestoft <sestoft@itu.dk> (for the the microML programming language)
 *)
-module FbIntepret
+module FbInterpret
 
 open System
 open System.IO

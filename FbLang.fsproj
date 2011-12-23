@@ -6,7 +6,7 @@
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{1df95266-a3cf-4983-98bd-12b6334124b6}</ProjectGuid>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <RootNamespace>FbLang</RootNamespace>
     <AssemblyName>FbLang</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
@@ -42,7 +42,7 @@
     <Compile Include="FbLex.fs" />
     <Compile Include="FbEval.fs" />
     <Compile Include="FbInterpret.fs" />
-    <Compile Include="Program.fs" />
+    <None Include="TestScript.fsx" />
     <None Include="FbLex.fsl" />
     <None Include="FbPar.fsy" />
   </ItemGroup>

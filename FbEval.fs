@@ -70,4 +70,5 @@ let rec eval (e : expr) (env : value env) : value =
            | AnonymousClosure(x, body, declEnv) ->
              let xVal = eval eArg env
              eval body <| (x, xVal)::declEnv
-           | _ -> failwith "eval Call: not a function";;
+           | _ -> failwith "eval Call: not a function"
+      | StrdLit(typ, _) -> failwithf "unparsed structured data literal of type %s" typ

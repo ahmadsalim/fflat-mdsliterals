@@ -43,11 +43,12 @@ type valtype =
 
 type expr = 
   | Cst of valtype
+  | StrdLit of string * string                         (* (literalType, literalValue) *)
   | Var of string
   | Let of string * expr * expr
   | Prim of string * expr * expr
   | If of expr * expr * expr
-  | Letfuns of (string * string * expr) list * expr    (* (f, x, fBody, letBody) *)
+  | Letfuns of (string * string * expr) list * expr    (* (f, x, fBody, letBody)      *)
   | Fun of string * expr
   | Call of expr * expr
 
@@ -64,4 +65,3 @@ let mkFun args fBody =
     match args with
     | []        -> failwith "Illegal function with no arguments"
     | arg::argr -> List.foldBack (fun a f -> Fun(a, f)) args fBody
-    

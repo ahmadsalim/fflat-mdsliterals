@@ -7,27 +7,27 @@
  open FbAst;
 %}
 
-%token <int> CSTINT
-%token <bool> CSTBOOL
-%token <string> CSTSTR
-%token <string * string> STRDLIT
-%token <string> NAME
+%token <int> CstInt_t
+%token <bool> CstBool_t
+%token <string> CstStr_t
+%token <string * string> StrdLit_t
+%token <string> Name_t
 
-%token ELSE END FALSE IF IN LET NOT THEN TRUE AND HAT
-%token FUN ARROW
-%token PLUS MINUS TIMES DIV MOD
-%token EQ NE GT LT GE LE
-%token LPAR RPAR COMMA
-%token EOF
+%token Else_t End_t If_t In_t Let_t Not_t Then_t And_t Hat_t
+%token Fun_t Arrow_t
+%token Plus_t Minus_t Times_t Div_t Mod_t
+%token Eq_t Ne_t Gt_t Lt_t Ge_t Le_t
+%token LPar_t RPar_t Comma_t
+%token Eof_t
 
-%right ARROW
-%left ELSE              /* lowest precedence  */
-%left EQ NE 
-%nonassoc GT LT GE LE
-%left PLUS MINUS
-%left HAT
-%left TIMES DIV MOD 
-%nonassoc NOT           /* highest precedence  */
+%right Arrow_t
+%left Else_t              /* lowest precedence  */
+%left Eq_t Ne_t 
+%nonassoc Gt_t Lt_t Ge_t Le_t
+%left Plus_t Minus_t
+%left Hat_t
+%left Times_t Div_t Mod_t 
+%nonassoc Not_t           /* highest precedence  */
 
 %start Main
 %type <FbAst.expr> Main Expr AtExpr Const
@@ -36,49 +36,49 @@
 %%
 
 Main:
-    Expr EOF                            { $1 }
+    Expr Eof_t                            { $1 }
 ;
 
 ArgList:
-    NAME								{ $1::[] }
-  |	NAME ArgList                        { $1::$2 }
+    Name_t								{ $1::[] }
+  |	Name_t ArgList                      { $1::$2 }
 
 Expr:
     AtExpr                              { $1                        }
   | AppExpr                             { $1                        }
-  | FUN ArgList ARROW Expr              { mkFun $2 $4               }
-  | IF Expr THEN Expr ELSE Expr         { If($2, $4, $6)            }
-  | MINUS Expr                          { Prim("-", Cst(Int 0), $2) }
-  | Expr PLUS  Expr                     { Prim("+",  $1, $3)        }
-  | Expr MINUS Expr                     { Prim("-",  $1, $3)        }
-  | Expr TIMES Expr                     { Prim("*",  $1, $3)        }
-  | Expr DIV   Expr                     { Prim("/",  $1, $3)        } 
-  | Expr MOD   Expr                     { Prim("%",  $1, $3)        }
-  | Expr EQ    Expr                     { Prim("=",  $1, $3)        }
-  | Expr NE    Expr                     { Prim("<>", $1, $3)        }
-  | Expr GT    Expr                     { Prim(">",  $1, $3)        }
-  | Expr LT    Expr                     { Prim("<",  $1, $3)        }
-  | Expr GE    Expr                     { Prim(">=", $1, $3)        }
-  | Expr LE    Expr                     { Prim("<=", $1, $3)        }
-  | Expr HAT   Expr                     { Prim("^",  $1, $3)        }
-  | STRDLIT                             { StrdLit $1                }
+  | Fun_t ArgList Arrow_t Expr          { mkFun $2 $4               }
+  | If_t Expr Then_t Expr Else_t Expr   { If($2, $4, $6)            }
+  | Minus_t Expr                        { Prim("-", Cst(Int 0), $2) }
+  | Expr Plus_t  Expr                   { Prim("+",  $1, $3)        }
+  | Expr Minus_t Expr                   { Prim("-",  $1, $3)        }
+  | Expr Times_t Expr                   { Prim("*",  $1, $3)        }
+  | Expr Div_t   Expr                   { Prim("/",  $1, $3)        } 
+  | Expr Mod_t   Expr                   { Prim("%",  $1, $3)        }
+  | Expr Eq_t    Expr                   { Prim("=",  $1, $3)        }
+  | Expr Ne_t    Expr                   { Prim("<>", $1, $3)        }
+  | Expr Gt_t    Expr                   { Prim(">",  $1, $3)        }
+  | Expr Lt_t    Expr                   { Prim("<",  $1, $3)        }
+  | Expr Ge_t    Expr                   { Prim(">=", $1, $3)        }
+  | Expr Le_t    Expr                   { Prim("<=", $1, $3)        }
+  | Expr Hat_t   Expr                   { Prim("^",  $1, $3)        }
+  | StrdLit_t                           { StrdLit $1                }
 ;
 
 FunBinding:
-  | NAME ArgList EQ Expr                { mkLetfun $1 $2 $4      }
+  | Name_t ArgList Eq_t Expr              { mkLetfun $1 $2 $4      }
 ;
 
 FunBindings:
   | FunBinding                          { $1::[]                 }
-  | FunBinding AND FunBindings	        { $1::$3                 }
+  | FunBinding And_t FunBindings	    { $1::$3                 }
 ;
 
 AtExpr:
-    Const                               { $1                     }
-  | NAME                                { Var $1                 }
-  | LET NAME EQ Expr IN Expr END        { Let($2, $4, $6)        }
-  | LET FunBindings IN Expr END         { Letfuns($2, $4)        }
-  | LPAR Expr RPAR                      { $2                     }
+    Const                                  { $1                     }
+  | Name_t                                 { Var $1                 }
+  | Let_t Name_t Eq_t Expr In_t Expr End_t { Let($2, $4, $6)        }
+  | Let_t FunBindings In_t Expr End_t      { Letfuns($2, $4)        }
+  | LPar_t Expr RPar_t                     { $2                     }
 ;
 
 AppExpr:
@@ -87,7 +87,7 @@ AppExpr:
 ;
 
 Const:
-  | CSTINT                              { Cst(Int($1))           }
-  | CSTBOOL                             { Cst(Bool($1))          }
-  | CSTSTR                              { Cst(Str($1))           }
+  | CstInt_t                            { Cst(Int($1))           }
+  | CstBool_t                           { Cst(Bool($1))          }
+  | CstStr_t                            { Cst(Str($1))           }
 ;

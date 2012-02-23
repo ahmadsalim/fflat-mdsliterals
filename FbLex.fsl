@@ -35,18 +35,18 @@ let escapeChar c =
 
 let keyword (s:string) =
     match s.Trim() with
-      | "else"  -> ELSE 
-      | "end"   -> END
-      | "false" -> CSTBOOL false
-      | "if"    -> IF
-      | "in"    -> IN
-      | "let"   -> LET
-      | "not"   -> NOT
-      | "then"  -> THEN
-      | "true"  -> CSTBOOL true
-      | "fun"   -> FUN
-      | "and"   -> AND
-      | _       -> NAME (s.Trim())
+      | "else"  -> Else_t 
+      | "end"   -> End_t
+      | "false" -> CstBool_t false
+      | "if"    -> If_t
+      | "in"    -> In_t
+      | "let"   -> Let_t
+      | "not"   -> Not_t
+      | "then"  -> Then_t
+      | "true"  -> CstBool_t true
+      | "fun"   -> Fun_t
+      | "and"   -> And_t
+      | _       -> Name_t (s.Trim())
 }
 
 let whitespace = ['\t' ' ']
@@ -55,7 +55,7 @@ rule Token = parse
   | '\r'                      { Token lexbuf }
   | '\n'                                   
                               { lexbuf.EndPos <- lexbuf.EndPos.NextLine; Token lexbuf }
-  | whitespace* ['0'-'9']+    { CSTINT (System.Int32.Parse (lexemeAsString lexbuf)) }
+  | whitespace* ['0'-'9']+    { CstInt_t (System.Int32.Parse (lexemeAsString lexbuf)) }
   | whitespace* ['a'-'z''A'-'Z']['a'-'z''A'-'Z''0'-'9']*
                               { keyword (lexemeAsString lexbuf) }
   | whitespace* "(*"          { commentStart := lexbuf.StartPos;
@@ -67,22 +67,22 @@ rule Token = parse
   | whitespace* '%' ['a'-'z']+ '{'
                               { ParseStrdLit (getType (lexemeAsString lexbuf))
                                                 (System.Text.StringBuilder()) lexbuf }
-  | whitespace* '='           { EQ }
-  | whitespace* "<>"          { NE }
-  | whitespace* '>'           { GT }
-  | whitespace* '<'           { LT }
-  | whitespace* ">="          { GE }
-  | whitespace* "<="          { LE }
-  | whitespace* '+'           { PLUS }                     
-  | whitespace* '-'           { MINUS }                     
-  | whitespace* '*'           { TIMES }                     
-  | whitespace* '/'           { DIV }                     
-  | whitespace* '%'           { MOD }
-  | whitespace* '('           { LPAR }
-  | whitespace* ')'           { RPAR }
-  | whitespace* '^'           { HAT }
-  | whitespace* "->"          { ARROW }
-  | whitespace* eof           { EOF }
+  | whitespace* '='           { Eq_t }
+  | whitespace* "<>"          { Ne_t }
+  | whitespace* '>'           { Gt_t }
+  | whitespace* '<'           { Lt_t }
+  | whitespace* ">="          { Ge_t }
+  | whitespace* "<="          { Le_t }
+  | whitespace* '+'           { Plus_t }                     
+  | whitespace* '-'           { Minus_t }                     
+  | whitespace* '*'           { Times_t }                     
+  | whitespace* '/'           { Div_t }                     
+  | whitespace* '%'           { Mod_t }
+  | whitespace* '('           { LPar_t }
+  | whitespace* ')'           { RPar_t }
+  | whitespace* '^'           { Hat_t }
+  | whitespace* "->"          { Arrow_t }
+  | whitespace* eof           { Eof_t }
   | whitespace+               { Token lexbuf }
   | _                         { failwith "Lexer error: illegal symbol" }
 
@@ -98,7 +98,7 @@ and SkipComment = parse
 
 and ParseString currStr = parse
    | "\""
-                    { CSTSTR (currStr.ToString()) }
+                    { CstStr_t (currStr.ToString()) }
    | eof            { failwith "Lexer error: unterminated string"   }
    | "\\" _         { ignore <| currStr.Append(escapeChar (lexbuf.LexemeChar 1)); 
                       ParseString currStr lexbuf
@@ -114,7 +114,7 @@ and ParseStrdLit t currStr = parse
                       ParseStrdLit t currStr lexbuf  
                     }
    | "}"
-                    { STRDLIT(t, currStr.ToString()) }
+                    { StrdLit_t(t, currStr.ToString()) }
    | "{"            { failwith "Lexer error: unexpected unescaped { in data literal" }
    | _              { ignore <| currStr.Append(lexemeAsString lexbuf);
                       ParseStrdLit t currStr lexbuf

@@ -42,7 +42,6 @@
     <Compile Include="FbLex.fs" />
     <Compile Include="FbEval.fs" />
     <Compile Include="FbInterpret.fs" />
-    <None Include="TestScript.fsx" />
     <None Include="FbLex.fsl" />
     <None Include="FbPar.fsy" />
   </ItemGroup>

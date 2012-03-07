@@ -8,6 +8,7 @@ module FbLex
 
 open Microsoft.FSharp.Text.Lexing
 open FbPar;
+open FbAst;
 
 let lexemeAsString lexbuf = 
     LexBuffer<char>.LexemeString lexbuf
@@ -33,20 +34,33 @@ let escapeChar c =
 
 (* Distinguish keywords from identifiers: *)
 
+let (|Basetype|_|) (s:string) = 
+    match s with
+    | "int"    -> Some (TypeName_t (TypInt))
+    | "string" -> Some (TypeName_t (TypStr))
+    | "bool"   -> Some (TypeName_t (TypBool))
+    | "dynamic"-> Some (TypeName_t (TypDyn))
+    | _        -> None
+
 let keyword (s:string) =
     match s.Trim() with
-      | "else"  -> Else_t 
-      | "end"   -> End_t
-      | "false" -> CstBool_t false
-      | "if"    -> If_t
-      | "in"    -> In_t
-      | "let"   -> Let_t
-      | "not"   -> Not_t
-      | "then"  -> Then_t
-      | "true"  -> CstBool_t true
-      | "fun"   -> Fun_t
-      | "and"   -> And_t
-      | _       -> Name_t (s.Trim())
+      | "else"      -> Else_t 
+      | "end"       -> End_t
+      | "false"     -> CstBool_t false
+      | "if"        -> If_t
+      | "in"        -> In_t
+      | "let"       -> Let_t
+      | "not"       -> Not_t
+      | "then"      -> Then_t
+      | "true"      -> CstBool_t true
+      | "fun"       -> Fun_t
+      | "and"       -> And_t
+      | "at"        -> At_t
+      | "type"      -> Type_t
+      | "of"        -> Of_t
+      | "requires"  -> Req_t
+      | Basetype typ-> typ
+      | _           -> Name_t (s.Trim())
 }
 
 let whitespace = ['\t' ' ']
@@ -56,8 +70,10 @@ rule Token = parse
   | '\n'                                   
                               { lexbuf.EndPos <- lexbuf.EndPos.NextLine; Token lexbuf }
   | whitespace* ['0'-'9']+    { CstInt_t (System.Int32.Parse (lexemeAsString lexbuf)) }
-  | whitespace* ['a'-'z''A'-'Z']['a'-'z''A'-'Z''0'-'9']*
+  | whitespace* ['a'-'z']['a'-'z''A'-'Z''0'-'9']*
                               { keyword (lexemeAsString lexbuf) }
+  | whitespace* ['A'-'Z']['a'-'z''A'-'Z''0'-'9']*
+                              { ConstrName_t ((lexemeAsString lexbuf).Trim()) }
   | whitespace* "(*"          { commentStart := lexbuf.StartPos;
                                 commentDepth := 1; 
                                 SkipComment lexbuf; 
@@ -73,6 +89,9 @@ rule Token = parse
   | whitespace* '<'           { Lt_t }
   | whitespace* ">="          { Ge_t }
   | whitespace* "<="          { Le_t }
+  | whitespace* "&&"          { AndAlso_t }
+  | whitespace* "||"          { OrElse_t }
+  | whitespace* "|"           { Pipe_t }
   | whitespace* '+'           { Plus_t }                     
   | whitespace* '-'           { Minus_t }                     
   | whitespace* '*'           { Times_t }                     
@@ -80,9 +99,13 @@ rule Token = parse
   | whitespace* '%'           { Mod_t }
   | whitespace* '('           { LPar_t }
   | whitespace* ')'           { RPar_t }
+  | whitespace* '['           { LBra_t }
+  | whitespace* ']'           { RBra_t }
   | whitespace* '^'           { Hat_t }
   | whitespace* "->"          { Arrow_t }
   | whitespace* eof           { Eof_t }
+  | whitespace* ','           { Comma_t }
+  | whitespace* ':'           { Colon_t }
   | whitespace+               { Token lexbuf }
   | _                         { failwith "Lexer error: illegal symbol" }
 

@@ -13,7 +13,7 @@ open FbEval
 
 (* Plain parsing from a string, with poor error reporting *)
 
-let fromString (str : string) : expr =
+let fromString (str : string) : typeenv * expr =
     let lexbuf = Lexing.LexBuffer<char>.FromString(str)
     in try 
          FbPar.Main FbLex.Token lexbuf
@@ -35,4 +35,4 @@ let fromFile (filename : string) =
                      (exn.Message) filename (pos.Line+1) pos.Column
 
 
-let run e = eval e []
+let run (types, e) = eval e [] types

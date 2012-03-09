@@ -1,175 +1,177 @@
 %{
- (* 
+ (*
     Parsing specification for Fb programming language
     Original Author: Peter Sestoft <sestoft@itu.dk> (for the the microML programming language)
   *)
 
 open FbAst;
 
-let defaultAsts = 
-    let typenv = Map.empty
-    let listDecl = ("list", [("@Nil", [], Cst(Bool true));("@Cons", [("head", TypDyn);("tail", TypAst("list"))], Cst(Bool true))])
-    addDataDeclToEnv listDecl typenv
 %}
 
-%token <int> CstInt_t
-%token <bool> CstBool_t
-%token <string> CstStr_t
+%token <int>             CstInt_t
+%token <bool>            CstBool_t
+%token <string>          CstStr_t
 %token <string * string> StrdLit_t
-%token <string> Name_t
-%token <string> ConstrName_t
+%token <string>          Name_t
+%token <string>          ConstrName_t
 
-%token <FbAst.typename> TypeName_t
+%token <FbAst.typename>  TypeName_t
 
-%token Type_t Of_t Req_t Colon_t
-%token Else_t End_t If_t In_t Let_t Not_t Then_t And_t Hat_t
-%token Fun_t Arrow_t
-%token Plus_t Minus_t Times_t Div_t Mod_t
-%token AndAlso_t OrElse_t
+%token Type_t    Of_t     Req_t   Colon_t
 %token Pipe_t
-%token Eq_t Ne_t Gt_t Lt_t Ge_t Le_t
-%token LPar_t RPar_t Comma_t
-%token LBra_t RBra_t
-%token At_t
+%token Let_t     In_t     End_t   And_t
+%token If_t      Else_t   Then_t
+%token Fun_t     Arrow_t
+%token Plus_t    Minus_t  Times_t Div_t   Mod_t Hat_t At_t
+%token AndAlso_t OrElse_t Not_t
+%token Eq_t      Ne_t     Gt_t    Lt_t    Ge_t  Le_t
+%token LPar_t    RPar_t   Comma_t
+%token LBra_t    RBra_t   Cons_t
 %token Eof_t
-       
+
 /* lowest precedence  */
-%right Arrow_t
-%left Else_t         
-%left AndAlso_t OrElse_t     
-%left Eq_t Ne_t 
-%nonassoc Gt_t Lt_t Ge_t Le_t
-%left Plus_t Minus_t
-%left Hat_t
-%left Times_t Div_t Mod_t 
-%nonassoc Not_t        
-%right Colon_t   
-%left At_t	   
+%right    Arrow_t
+%left     Else_t
+%left     AndAlso_t OrElse_t
+%left     Eq_t      Ne_t
+%nonassoc Gt_t      Lt_t     Ge_t Le_t
+%left     Plus_t    Minus_t
+%left     Hat_t
+%left     Times_t   Div_t    Mod_t
+%right    Not_t
+%right    Cons_t
+%left     At_t
 /* highest precedence  */
 
 %start Main
+
 %type <typeenv * FbAst.expr> Main
-%type <FbAst.expr> Expr AtExpr Const AppExpr
+%type <FbAst.expr>           Expr AtExpr Const AppExpr
 
 %%
 
 Main:
-    TypeDecls Expr Eof_t                { ($1, $2) }
+    TypeDecls Expr Eof_t                     { ($1, $2)                        }
 ;
 
 TypeDecls:
-      /* empty */                       { defaultAsts }
-      | TypeDecl TypeDecls              { addDataDeclToEnv $1 $2 }
+    /* empty */                              { defaultAsts                     }
+  | TypeDecl TypeDecls                       { addDataDeclToEnv $1 $2          }
 ;
 
 TypeDecl:
-    Type_t Name_t Eq_t ConstrDecls      { ($2, $4) }
+    Type_t Name_t Eq_t ConstrDecls           { ($2, $4)                        }
 ;
 
 ConstrDecls:
-    ConstrDecl                          { $1::[] }
-  | ConstrDecl Pipe_t ConstrDecls       { $1::$3 }
+    ConstrDecl                               { $1::[]                          }
+  | ConstrDecl Pipe_t ConstrDecls            { $1::$3                          }
 ;
 
 ConstrDecl:
-    ConstrName_t Of_t TypedVars GuardClause   { ($1, $3, $4) }
+    ConstrName_t Of_t TypedVars GuardClause  { ($1, $3, $4)                    }
 ;
 
 TypedVars:
-    TypedVar                            { $1::[]                 }
-  | TypedVar Times_t TypedVars          { addTypeVarToList $1 $3 }
+    TypedVar                                 { $1::[]                          }
+  | TypedVar Times_t TypedVars               { addTypeVarToList $1 $3          }
 ;
 
 TypedVar:
-    Name_t Colon_t TypeSpec             { ($1, $3) }
+    Name_t Colon_t TypeSpec                  { ($1, $3)                        }
 ;
 
 TypeSpecs:
-      TypeSpec                         	{ $1::[] }
-   |  TypeSpec Times_t TypeSpecs        { $1::$3 }
+    TypeSpec                                 { $1::[]                          }
+  | TypeSpec Times_t TypeSpecs               { $1::$3                          }
 ;
 
 TypeSpec:
-      TypeName_t                         { $1             }
-   |  Name_t                             { TypAst $1      }
-   |  TypeSpec Arrow_t TypeSpec          { TypFun($1, $3) }
-   |  LPar_t TypeSpecs RPar_t            { TypTpl $2      }
+    TypeName_t                               { $1                              }
+  | Name_t                                   { TypAst $1                       }
+  | TypeSpec Arrow_t TypeSpec                { TypFun($1, $3)                  }
+  | LPar_t TypeSpecs RPar_t                  { TypTpl $2                       }
 ;
 
 GuardClause:
-    /* empty */                         { Cst(Bool true) }
-    | Req_t Expr                        { $2 }
+    /* empty */                              { Cst(Bool true)                  }
+  | Req_t Expr                               { $2                              }
 ;
 
 ArgList:
-    Name_t								{ $1::[] }
-  |	Name_t ArgList                      { $1::$2 }
+    Name_t                                   { $1::[]                          }
+  | Name_t ArgList                           { $1::$2                          }
+;
 
 Expr:
-    AtExpr                              { $1                              }
-  | AppExpr                             { $1                              }
-  | Fun_t ArgList Arrow_t Expr          { mkFun $2 $4                     }
-  | If_t Expr Then_t Expr Else_t Expr   { If($2, $4, $6)                  }
-  | Minus_t Expr                        { Prim("-", Cst(Int 0), $2)       }
-  | Expr Plus_t  Expr                   { Prim("+",  $1, $3)              }
-  | Expr Minus_t Expr                   { Prim("-",  $1, $3)              }
-  | Expr Times_t Expr                   { Prim("*",  $1, $3)              }
-  | Expr Div_t   Expr                   { Prim("/",  $1, $3)              } 
-  | Expr Mod_t   Expr                   { Prim("%",  $1, $3)              }
-  | Expr Eq_t    Expr                   { Prim("=",  $1, $3)              }
-  | Expr Ne_t    Expr                   { Prim("<>", $1, $3)              }
-  | Expr Gt_t    Expr                   { Prim(">",  $1, $3)              }
-  | Expr Lt_t    Expr                   { Prim("<",  $1, $3)              }
-  | Expr Ge_t    Expr                   { Prim(">=", $1, $3)              }
-  | Expr Le_t    Expr                   { Prim("<=", $1, $3)              }
-  | Expr Hat_t   Expr                   { Prim("^",  $1, $3)              }
-  | Expr AndAlso_t Expr                 { Prim("&&", $1, $3)              }
-  | Expr OrElse_t  Expr                 { Prim("||", $1, $3)              }
-  | Expr At_t    Expr                   { Prim("at", $1, $3)              }
-  | Expr Colon_t Expr                   { AstConstr("@Cons", [| $1; $3|]) }
-  | StrdLit_t                           { StrdLit $1                      }
+    AtExpr                                   { $1                              }
+  | AppExpr                                  { $1                              }
+  | Fun_t ArgList Arrow_t Expr               { mkFun $2 $4                     }
+  | If_t Expr Then_t Expr Else_t Expr        { If($2, $4, $6)                  }
+  | Minus_t Expr                             { Prim("-", Cst(Int 0), $2)       }
+  | Expr Plus_t  Expr                        { Prim("+",  $1, $3)              }
+  | Expr Minus_t Expr                        { Prim("-",  $1, $3)              }
+  | Expr Times_t Expr                        { Prim("*",  $1, $3)              }
+  | Expr Div_t   Expr                        { Prim("/",  $1, $3)              }
+  | Expr Mod_t   Expr                        { Prim("%",  $1, $3)              }
+  | Expr Eq_t    Expr                        { Prim("=",  $1, $3)              }
+  | Expr Ne_t    Expr                        { Prim("<>", $1, $3)              }
+  | Expr Gt_t    Expr                        { Prim(">",  $1, $3)              }
+  | Expr Lt_t    Expr                        { Prim("<",  $1, $3)              }
+  | Expr Ge_t    Expr                        { Prim(">=", $1, $3)              }
+  | Expr Le_t    Expr                        { Prim("<=", $1, $3)              }
+  | Expr Hat_t   Expr                        { Prim("^",  $1, $3)              }
+  | Expr AndAlso_t Expr                      { Prim("&&", $1, $3)              }
+  | Expr OrElse_t  Expr                      { Prim("||", $1, $3)              }
+  | Expr At_t    Expr                        { Prim("at", $1, $3)              }
+  | Expr Cons_t Expr                         { AstConstr("@Cons", [| $1; $3|]) }
+  | StrdLit_t                                { StrdLit $1                      }
 ;
 
 FunBinding:
-  | Name_t ArgList Eq_t Expr              { mkLetfun $1 $2 $4      }
+    Name_t ArgList Eq_t Expr                 { mkLetfun $1 $2 $4               }
 ;
 
 FunBindings:
-  | FunBinding                          { $1::[]                 }
-  | FunBinding And_t FunBindings	    { $1::$3                 }
+    FunBinding                               { $1::[]                          }
+  | FunBinding And_t FunBindings             { $1::$3                          }
 ;
 
 AtExpr:
-    Const                                  { $1                     }
-  | ListConstr                             { $1                     }
-  | Name_t                                 { Var $1                 }
-  | ConstrName_t                           { mkAstConstr $1 []      }
-  | ConstrName_t LPar_t CommaSeparatedExprs RPar_t
-                                           { mkAstConstr $1 $3      }
-  | LPar_t CommaSeparatedExprs RPar_t      { mkTplConstr $2         }
-  | Let_t Name_t Eq_t Expr In_t Expr End_t { Let($2, $4, $6)        }
-  | Let_t FunBindings In_t Expr End_t      { Letfuns($2, $4)        }
-  | LPar_t Expr RPar_t                     { $2                     }
+    Const                                    { $1                              }
+  | ListConstr                               { $1                              }
+  | Name_t                                   { Var $1                          }
+  | ConstrName_t                             { mkAstConstr $1 []               }
+  | ConstrName_t LPar_t ListExprs RPar_t     { mkAstConstr $1 $3               }
+  | LPar_t TupleExprs RPar_t                 { mkTplConstr $2                  }
+  | Let_t Name_t Eq_t Expr In_t Expr End_t   { Let($2, $4, $6)                 }
+  | Let_t FunBindings In_t Expr End_t        { Letfuns($2, $4)                 }
+  | LPar_t Expr RPar_t                       { $2                              }
+;
+
+
+TupleExprs:
+    Expr Comma_t Expr                        { $1::$3::[]                      }
+  | Expr Comma_t TupleExprs                  { $1::$3                          }
 ;
 
 ListConstr:
-  | LBra_t RBra_t                       { mkList []          }
-  | LBra_t CommaSeparatedExprs RBra_t   { mkList $2          }
+    LBra_t RBra_t                            { mkList []                       }
+  | LBra_t ListExprs RBra_t                  { mkList $2                       }
 ;
 
-CommaSeparatedExprs:
-  | Expr                                { $1::[]                }
-  | Expr Comma_t CommaSeparatedExprs    { $1::$3                }
+ListExprs:
+    Expr                                     { $1::[]                          }
+  | Expr Comma_t ListExprs                   { $1::$3                          }
 ;
-    
 
 AppExpr:
-  | AtExpr AtExpr                       { Call($1, $2)           }
-  | AppExpr AtExpr                      { Call($1, $2)           }
+    AtExpr AtExpr                            { Call($1, $2)                    }
+  | AppExpr AtExpr                           { Call($1, $2)                    }
 ;
 
 Const:
-  | CstInt_t                            { Cst(Int($1))           }
-  | CstBool_t                           { Cst(Bool($1))          }
-  | CstStr_t                            { Cst(Str($1))           }
+    CstInt_t                                 { Cst(Int($1))                    }
+  | CstBool_t                                { Cst(Bool($1))                   }
+  | CstStr_t                                 { Cst(Str($1))                    }
 ;

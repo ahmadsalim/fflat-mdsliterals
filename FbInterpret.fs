@@ -15,23 +15,23 @@ open FbEval
 
 let fromString (str : string) : typeenv * expr =
     let lexbuf = Lexing.LexBuffer<char>.FromString(str)
-    in try 
+    in try
          FbPar.Main FbLex.Token lexbuf
-       with 
-         | exn -> let pos = lexbuf.EndPos 
-                  in failwithf "%s near line %d, column %d\n" 
+       with
+         | exn -> let pos = lexbuf.EndPos
+                  in failwithf "%s near line %d, column %d\n"
                      (exn.Message) (pos.Line+1) pos.Column
-             
+
 (* Parsing from a file *)
 
 let fromFile (filename : string) =
     use reader = new StreamReader(filename)
     let lexbuf = Lexing.LexBuffer<char>.FromTextReader reader
-    in try 
+    in try
          FbPar.Main FbLex.Token lexbuf
-       with 
-         | exn -> let pos = lexbuf.EndPos 
-                  in failwithf "%s in file %s near line %d, column %d\n" 
+       with
+         | exn -> let pos = lexbuf.EndPos
+                  in failwithf "%s in file %s near line %d, column %d\n"
                      (exn.Message) filename (pos.Line+1) pos.Column
 
 

@@ -23,8 +23,9 @@ let rec lookup env x =
 type value =
   | Val of valtype
   | Tpl of value array
-  | Ast of string * value array
+  | Adt of string * value array
   | Closure of string * expr * value lazyenv  (* (f, x, fBody, fDeclEnv) *)
+  | AdtClosure of string                      (* constructor closure     *)
 
 let rec getType (v : value) (types : typeenv) : typename =
     match v with
@@ -35,8 +36,8 @@ let rec getType (v : value) (types : typeenv) : typename =
         | Bool _-> TypBool
     | Tpl(vals)  ->
         TypTpl (List.map (fun vl -> getType vl types) (Array.toList vals))
-    | Ast(name, _) ->
-        TypAst ( let (typ,_,_) = (Map.find name types) in typ )
+    | Adt(name, _) ->
+        TypAdt ( let (typ,_,_) = (Map.find name types) in typ )
     | Closure _    ->
         TypFun(TypDyn,TypDyn) //Only dynamic functions are supported as there is no typechecking
 
@@ -48,7 +49,7 @@ let rec typeCastable (typTo : typename) (typFrom : typename) : bool =
     | (TypBool, TypBool) -> true
     | (TypTpl(valsTo), TypTpl(valsFrom))
             when List.forall2 (fun vT vF -> typeCastable vT vF) valsTo valsFrom -> true
-    | (TypAst(nameTo), TypAst(nameFrom)) when nameTo = nameFrom -> true
+    | (TypAdt(nameTo), TypAdt(nameFrom)) when nameTo = nameFrom -> true
     | (TypFun(fTo, xTo), TypFun(fFrom, xFrom))
         when typeCastable fTo fFrom && typeCastable xTo xFrom -> true
     | _ -> false
@@ -61,7 +62,7 @@ let rec eval (e : expr) (env : value env) (types : typeenv) : value =
       | Prim(ope, e1, e2) ->
         let v1 = eval e1 env types
         match (ope, v1, e2) with
-        | ("at", Ast(name, exprs), Var field) ->
+        | ("at", Adt(name, exprs), Var field) ->
                 let findIndex fieldList fieldname =
                     let rec findIndex fieldList fieldname count =
                       match fieldList with
@@ -115,22 +116,29 @@ let rec eval (e : expr) (env : value env) (types : typeenv) : value =
              let xVal = eval eArg env types
              let fBodyEnv = (x, xVal)::(LazyList.toList fDeclEnv)
              eval fBody fBodyEnv types
+           | AdtClosure name ->
+              let (_, args, guard) = Map.find name types
+              let rec bindArguments args exprs =
+                   List.fold2 (fun rest arg vl ->
+                                if typeCastable (snd arg) (getType vl types)
+                                   then (fst arg, vl) :: rest
+                                   else failwithf "Uncompatible type %s for arg %s in constructor %s" ((snd arg).ToString()) (fst arg) (name)
+                                   ) [] args exprs
+
+              let argVal = eval eArg env types
+              let vals   = match argVal with
+                           | Tpl(vals)       -> Array.toList vals
+                           | _               -> [ argVal ]
+              let boundArgs = bindArguments args vals
+              match eval guard boundArgs types with
+              | Val(Bool true) -> Adt(name, List.map (snd) boundArgs |> List.rev |> List.toArray)
+              | Val(Bool false)-> failwithf "Arguments given to constructor %s does not fulfill requirements" name
+              | _              -> failwithf "Invalid guard on constructor %s" name
            | _ -> failwith "eval Call: not a function"
       | TplConstr exprs -> Tpl (Array.map (fun expr -> eval expr env types) exprs)
-      | AstConstr(name, exprs) ->
-           let (_, args, guard) = Map.find name types
-           let rec bindArguments args exprs =
-                List.fold2 (fun rest arg expr ->
-                             let evaled = eval expr env types
-                             if typeCastable (snd arg) (getType evaled types)
-                                then (fst arg, evaled) :: rest
-                                else failwithf "Uncompatible type %s for arg %s in constructor %s" ((snd arg).ToString()) (fst arg) (name)
-                                ) [] args exprs
-           let boundArgs = bindArguments args (Array.toList exprs)
-           match eval guard boundArgs types with
-           | Val(Bool true) -> Ast(name, List.map (snd) boundArgs |> List.rev |> List.toArray)
-           | Val(Bool false)-> failwithf "Arguments given to constructor %s does not fulfill requirements" name
-           | _              -> failwithf "Invalid guard on constructor %s" name
-
-
+      | AdtConstr name ->
+        let (_, args, guard) = Map.find name types
+        match args with
+        | [] -> Adt(name, [||])
+        | _  -> AdtClosure(name)
       | StrdLit(typ, _) -> failwithf "unparsed structured data literal of type %s" typ

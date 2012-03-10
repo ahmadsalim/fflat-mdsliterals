@@ -51,7 +51,7 @@ type expr =
   | Fun of string * expr
   | Call of expr * expr
   | TplConstr of expr array
-  | AstConstr of string * expr array                   (* (constructor name, data)    *)
+  | AdtConstr of string                                (* (constructor name)          *)
 
 (** Smart constuctors for expr **)
 
@@ -72,11 +72,8 @@ let mkTplConstr exprs =
     | [] | _::[] -> failwith "Illegal tuple with one argument or less"
     | _     -> TplConstr(List.toArray exprs)
 
-let mkAstConstr name exprs =
-    AstConstr(name, List.toArray exprs)
-
 let mkList exprs =
-    List.fold(fun rest expr -> AstConstr("@Cons", [| expr; rest |])) (AstConstr("@Nil", [||])) (List.rev exprs)
+    List.fold(fun rest expr -> Call(AdtConstr("@Cons"), TplConstr([| expr; rest |]))) (AdtConstr("@Nil")) (List.rev exprs)
 
 
 (* Type declarations for data *)
@@ -85,7 +82,7 @@ type typename =
   | TypBool
   | TypStr
   | TypTpl of typename list
-  | TypAst of string
+  | TypAdt of string
   | TypDyn
   | TypFun of typename * typename
 
@@ -107,8 +104,8 @@ let addTypeVarToList tvar tvars =
     then failwithf "%s is already bound in constructor" (fst tvar)
     else tvar::tvars
 
-let defaultAsts =
+let defaultAdts =
     let typenv = Map.empty
     let listDecl = ("list", [("@Nil",  [],                                          Cst(Bool true));
-                             ("@Cons", [("head", TypDyn);("tail", TypAst("list"))], Cst(Bool true))])
+                             ("@Cons", [("head", TypDyn);("tail", TypAdt("list"))], Cst(Bool true))])
     addDataDeclToEnv listDecl typenv

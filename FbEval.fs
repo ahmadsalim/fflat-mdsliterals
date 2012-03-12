@@ -73,6 +73,11 @@ let rec eval (e : expr) (env : value env) (types : typeenv) : value =
                     findIndex fieldList fieldname 0
                 let i = findIndex (let (_, fieldnames, _) = (Map.find name types) in fieldnames) field
                 if i >= 0 then exprs.[i] else failwithf "Constructor: %s does not have field: %s" name field
+
+        | ("at", Tpl(exprs) , Cst(Int i))  ->
+                if 0 < i && i <= exprs.Length
+                    then exprs.[i-1]
+                    else failwithf "Tuple does not contain any element at location %d" i
         | _  -> let v2 = eval e2 env types
                 match (ope, v1, v2) with
                    | ("*",  Val(Int i1), Val(Int i2)) -> Val(Int(i1 * i2))
@@ -86,10 +91,6 @@ let rec eval (e : expr) (env : value env) (types : typeenv) : value =
                    | (">" , Val(v1)    , Val(v2))     -> Val(Bool(v1 > v2))
                    | (">=", Val(v1)    , Val(v2))     -> Val(Bool(v1 >= v2))
                    | ("^",  Val(Str s1), Val(Str s2)) -> Val(Str(s1 + s2))
-                   | ("at", Tpl(exprs) , Val(Int i))  ->
-                        if 0 < i && i <= exprs.Length
-                            then exprs.[i-1]
-                            else failwithf "Tuple does not contain any element at location %d" i
                    | ("&&", Val(Bool b1), Val(Bool b2))-> Val(Bool(b1 && b2))
                    | ("||", Val(Bool b1), Val(Bool b2))-> Val(Bool(b1 || b2))
                    |  _ -> failwith "unknown primitive or wrong type"

@@ -69,7 +69,8 @@ ConstrDecls:
 ;
 
 ConstrDecl:
-    ConstrName_t Of_t TypedVars GuardClause  { ($1, $3, $4)                                     }
+    ConstrName_t                             { ($1, [] , Cst(Bool true))                        }
+  | ConstrName_t Of_t TypedVars GuardClause  { ($1, $3, $4)                                     }
 ;
 
 TypedVars:
@@ -104,8 +105,7 @@ ArgList:
 ;
 
 Expr:
-    AtExpr                                   { $1                                               }
-  | AppExpr                                  { $1                                               }
+    AppExpr                                  { $1                                               }
   | Fun_t ArgList Arrow_t Expr               { mkFun $2 $4                                      }
   | If_t Expr Then_t Expr Else_t Expr        { If($2, $4, $6)                                   }
   | Minus_t Expr                             { Prim("-", Cst(Int 0), $2)                        }
@@ -165,7 +165,7 @@ ListExprs:
 ;
 
 AppExpr:
-    AtExpr AtExpr                            { Call($1, $2)                                     }
+    AtExpr                                   { $1                                               }
   | AppExpr AtExpr                           { Call($1, $2)                                     }
 ;
 

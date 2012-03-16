@@ -67,88 +67,88 @@ let keyword (s:string) =
 let whitespace = ['\t' ' ']
 
 rule Token = parse
-      '\r'                                             { Token lexbuf                                                   }
-    | '\n'                                             {
-                                                         lexbuf.EndPos <- lexbuf.EndPos.NextLine;
-                                                         Token lexbuf
-                                                       }
-    | whitespace* ['0'-'9']+                           { CstInt_t (System.Int32.Parse (lexemeAsString lexbuf))          }
-    | whitespace* ['a'-'z']['a'-'z''A'-'Z''0'-'9']*    { keyword (lexemeAsString lexbuf)                                }
-    | whitespace* ['A'-'Z']['a'-'z''A'-'Z''0'-'9']*    { ConstrName_t ((lexemeAsString lexbuf).Trim())                  }
-    | whitespace* "(*"                                 {
-                                                         commentStart := lexbuf.StartPos;
-                                                         commentDepth := 1;
-                                                         SkipComment lexbuf;
-                                                         Token lexbuf
-                                                       }
-    | whitespace* "\""                                 { ScanString (System.Text.StringBuilder()) lexbuf                }
-    | whitespace* '%' ['a'-'z']+ '{'                   {
-                                                         ScanStrdLit (getType (lexemeAsString lexbuf))
-                                                                         (System.Text.StringBuilder()) lexbuf
-                                                       }
-    | whitespace* '='                                  { Eq_t                                                           }
-    | whitespace* "<>"                                 { Ne_t                                                           }
-    | whitespace* '>'                                  { Gt_t                                                           }
-    | whitespace* '<'                                  { Lt_t                                                           }
-    | whitespace* ">="                                 { Ge_t                                                           }
-    | whitespace* "<="                                 { Le_t                                                           }
-    | whitespace* "&&"                                 { AndAlso_t                                                      }
-    | whitespace* "||"                                 { OrElse_t                                                       }
-    | whitespace* "|"                                  { Pipe_t                                                         }
-    | whitespace* '+'                                  { Plus_t                                                         }
-    | whitespace* '-'                                  { Minus_t                                                        }
-    | whitespace* '*'                                  { Times_t                                                        }
-    | whitespace* '/'                                  { Div_t                                                          }
-    | whitespace* '%'                                  { Mod_t                                                          }
-    | whitespace* '('                                  { LPar_t                                                         }
-    | whitespace* ')'                                  { RPar_t                                                         }
-    | whitespace* '['                                  { LBra_t                                                         }
-    | whitespace* ']'                                  { RBra_t                                                         }
-    | whitespace* '^'                                  { Hat_t                                                          }
-    | whitespace* "->"                                 { Arrow_t                                                        }
-    | whitespace* eof                                  { Eof_t                                                          }
-    | whitespace* ','                                  { Comma_t                                                        }
-    | whitespace* "::"                                 { Cons_t                                                         }
-    | whitespace* ':'                                  { Colon_t                                                        }
-    | whitespace+                                      { Token lexbuf                                                   }
-    | _                                                { failwith "Lexer error: illegal symbol"                         }
+      '\r'                                                 { Token lexbuf                                                   }
+    | '\n'                                                 {
+                                                             lexbuf.EndPos <- lexbuf.EndPos.NextLine;
+                                                             Token lexbuf
+                                                           }
+    | whitespace* ['0'-'9']+                               { CstInt_t (System.Int32.Parse (lexemeAsString lexbuf))          }
+    | whitespace* ['a'-'z']['a'-'z''A'-'Z''0'-'9''_']*'?'? { keyword (lexemeAsString lexbuf)                                }
+    | whitespace* ['A'-'Z']['a'-'z''A'-'Z''0'-'9']*        { ConstrName_t ((lexemeAsString lexbuf).Trim())                  }
+    | whitespace* "(*"                                     {
+                                                             commentStart := lexbuf.StartPos;
+                                                             commentDepth := 1;
+                                                             SkipComment lexbuf;
+                                                             Token lexbuf
+                                                           }
+    | whitespace* "\""                                     { ScanString (System.Text.StringBuilder()) lexbuf                }
+    | whitespace* '%' ['a'-'z']+ '{'                       {
+                                                             ScanStrdLit (getType (lexemeAsString lexbuf))
+                                                                             (System.Text.StringBuilder()) lexbuf
+                                                           }
+    | whitespace* '='                                      { Eq_t                                                           }
+    | whitespace* "<>"                                     { Ne_t                                                           }
+    | whitespace* '>'                                      { Gt_t                                                           }
+    | whitespace* '<'                                      { Lt_t                                                           }
+    | whitespace* ">="                                     { Ge_t                                                           }
+    | whitespace* "<="                                     { Le_t                                                           }
+    | whitespace* "&&"                                     { AndAlso_t                                                      }
+    | whitespace* "||"                                     { OrElse_t                                                       }
+    | whitespace* "|"                                      { Pipe_t                                                         }
+    | whitespace* '+'                                      { Plus_t                                                         }
+    | whitespace* '-'                                      { Minus_t                                                        }
+    | whitespace* '*'                                      { Times_t                                                        }
+    | whitespace* '/'                                      { Div_t                                                          }
+    | whitespace* '%'                                      { Mod_t                                                          }
+    | whitespace* '('                                      { LPar_t                                                         }
+    | whitespace* ')'                                      { RPar_t                                                         }
+    | whitespace* '['                                      { LBra_t                                                         }
+    | whitespace* ']'                                      { RBra_t                                                         }
+    | whitespace* '^'                                      { Hat_t                                                          }
+    | whitespace* "->"                                     { Arrow_t                                                        }
+    | whitespace* eof                                      { Eof_t                                                          }
+    | whitespace* ','                                      { Comma_t                                                        }
+    | whitespace* "::"                                     { Cons_t                                                         }
+    | whitespace* ':'                                      { Colon_t                                                        }
+    | whitespace+                                          { Token lexbuf                                                   }
+    | _                                                    { failwith "Lexer error: illegal symbol"                         }
 
 and SkipComment = parse
-      "*)"                                             {
-                                                         commentDepth := !commentDepth - 1;
-                                                         if !commentDepth = 0 then ()
-                                                         else SkipComment lexbuf
-                                                       }
-    | "(*"                                             {
-                                                         commentDepth := !commentDepth + 1;
-                                                         SkipComment lexbuf
-                                                       }
-    | eof                                              { failwith "Lexer error: unterminated comment"                   }
-    | _                                                { SkipComment lexbuf                                             }
+      "*)"                                                 {
+                                                             commentDepth := !commentDepth - 1;
+                                                             if !commentDepth = 0 then ()
+                                                             else SkipComment lexbuf
+                                                           }
+    | "(*"                                                 {
+                                                             commentDepth := !commentDepth + 1;
+                                                             SkipComment lexbuf
+                                                           }
+    | eof                                                  { failwith "Lexer error: unterminated comment"                   }
+    | _                                                    { SkipComment lexbuf                                             }
 
 and ScanString currStr = parse
-      "\""                                             { CstStr_t (currStr.ToString())                                  }
-    | eof                                              { failwith "Lexer error: unterminated string"                    }
-    | "\\" _                                           {
-                                                         ignore <| currStr.Append(escapeChar (lexbuf.LexemeChar 1));
-                                                         ScanString currStr lexbuf
-                                                       }
-    | _                                                {
-                                                         ignore <| currStr.Append(lexemeAsString lexbuf);
-                                                         ScanString currStr lexbuf
-                                                       }
+      "\""                                                 { CstStr_t (currStr.ToString())                                  }
+    | eof                                                  { failwith "Lexer error: unterminated string"                    }
+    | "\\" _                                               {
+                                                             ignore <| currStr.Append(escapeChar (lexbuf.LexemeChar 1));
+                                                             ScanString currStr lexbuf
+                                                           }
+    | _                                                    {
+                                                             ignore <| currStr.Append(lexemeAsString lexbuf);
+                                                             ScanString currStr lexbuf
+                                                           }
 and ScanStrdLit t currStr = parse
-      "{{"                                             {
-                                                         ignore <| currStr.Append("{");
-                                                         ScanStrdLit t currStr lexbuf
-                                                       }
-    | "}}"                                             {
-                                                         ignore <| currStr.Append("}");
-                                                         ScanStrdLit t currStr lexbuf
-                                                       }
-    | "}"                                              { StrdLit_t(t, currStr.ToString())                               }
-    | "{"                                              { failwith "Lexer error: unexpected unescaped { in data literal" }
-    | _                                                {
-                                                         ignore <| currStr.Append(lexemeAsString lexbuf);
-                                                         ScanStrdLit t currStr lexbuf
-                                                       }
+      "{{"                                                 {
+                                                             ignore <| currStr.Append("{");
+                                                             ScanStrdLit t currStr lexbuf
+                                                           }
+    | "}}"                                                 {
+                                                             ignore <| currStr.Append("}");
+                                                             ScanStrdLit t currStr lexbuf
+                                                           }
+    | "}"                                                  { StrdLit_t(t, currStr.ToString())                               }
+    | "{"                                                  { failwith "Lexer error: unexpected unescaped { in data literal" }
+    | _                                                    {
+                                                             ignore <| currStr.Append(lexemeAsString lexbuf);
+                                                             ScanStrdLit t currStr lexbuf
+                                                           }

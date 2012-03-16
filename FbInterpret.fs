@@ -58,7 +58,9 @@ let rec prettyPrint vl =
                                                          | Adt("@Nil", _) -> ""
                                                          | _ -> failwith "Error in list ADT"))
         sprintf "[%s]" (prettyPrintCons head tail true)
-    | Adt(name, vals) -> sprintf "%s(%s)" name (System.String.Join(",", Array.map (prettyPrint) vals))
+    | Adt(name, vals) -> if vals.Length = 0
+                          then sprintf "%s" name
+                          else sprintf "%s(%s)" name (System.String.Join(",", Array.map (prettyPrint) vals))
     | Closure _    -> sprintf "fun<%x>" (vl.GetHashCode())
     | AdtClosure _ -> sprintf "adt<%x>" (vl.GetHashCode())
 

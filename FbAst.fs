@@ -55,6 +55,7 @@ type expr =
   | Match of expr * (expr * expr * expr) list          (* (expr, [(pat, guard, res)...]*)
   | AsBinding of expr * string                         (* as pattern                   *)
   | WildCard
+  | Quote of string
 
 
 (** Smart constuctors for expr **)

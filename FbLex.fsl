@@ -20,7 +20,9 @@ let commentStart = ref Position.Empty;
 
 let commentDepth = ref 0;  (* Current comment nesting *)
 
-let getType (str:string) = str.Substring(1, str.Length - 2)
+let getType (str:string) =
+  let str = str.Trim()
+  str.Substring(1, str.Length - 2)
 
 let escapeChar c =
     match c with

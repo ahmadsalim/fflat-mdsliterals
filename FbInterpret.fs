@@ -21,7 +21,7 @@ type IStructuredDataLiteralParser =
   end
 
 
-let makeStucturedDataLiteralParser (handledDataType : string) (resultDataTypes : datadecl seq) (parseLiteral : (string -> expr) -> string -> expr) =
+let mkStucturedDataLiteralParser (handledDataType : string) (resultDataTypes : datadecl seq) (parseLiteral : (string -> expr) -> string -> expr) =
    {  new IStructuredDataLiteralParser with
         member this.HandledDataType = handledDataType
         member this.ResultDataTypes = resultDataTypes
@@ -30,10 +30,11 @@ let makeStucturedDataLiteralParser (handledDataType : string) (resultDataTypes :
 
 type Interpreter() =
   class
-    let strdlitParsers =
+    let strdLitParsers =
       new System.Collections.Generic.Dictionary<string, IStructuredDataLiteralParser>()
+
     member public this.RegisterLiteralParser (parser : IStructuredDataLiteralParser) : unit =
-      strdlitParsers.Add(parser.HandledDataType, parser)
+      strdLitParsers.Add(parser.HandledDataType, parser)
 
     member public this.ParseExpressionFromString (str : string) : expr =
           let lexbuf = Lexing.LexBuffer<char>.FromString(str)
@@ -51,6 +52,7 @@ type Interpreter() =
           | exn -> let pos = lexbuf.EndPos
                    failwithf "%s near line %d, column %d\n"
                        (exn.Message) (pos.Line+1) pos.Column
+
     member public this.ParseProgramFromFile (filename : string) : typeenv * expr =
          use reader = new StreamReader(filename)
          let lexbuf = Lexing.LexBuffer<char>.FromTextReader reader
@@ -60,6 +62,35 @@ type Interpreter() =
             | exn -> let pos = lexbuf.EndPos
                      failwithf "%s in file %s near line %d, column %d\n"
                       (exn.Message) filename (pos.Line+1) pos.Column
+
+    member public this.ResolveStructuredDataLiterals (expression : expr) : expr =
+         let rec resolveStrdLit expr =
+            match expr with
+            | StrdLit(datatype, literal) when strdLitParsers.ContainsKey(datatype) ->
+                checkStrdLit (strdLitParsers.[datatype].ParseLiteral
+                                  (this.ParseExpressionFromString) (literal)) datatype
+            | StrdLit(datatype, literal) ->
+                failwithf "Unregistered parser for structured data literal of type %s" datatype
+            | Let(name, er, eb) -> Let(name, resolveStrdLit er, resolveStrdLit eb)
+            | Prim(opr, e1, e2) -> Prim(opr, resolveStrdLit e1, resolveStrdLit e2)
+            | If(ec, et, ef)    -> If(resolveStrdLit ec, resolveStrdLit et, resolveStrdLit ef)
+            | Letfuns(efuns, eb) ->
+                Letfuns(List.map (fun (fname, fparam, er) -> (fname, fparam, resolveStrdLit er)) efuns,
+                          resolveStrdLit eb)
+            | Fun(param, eb) -> Fun(param, resolveStrdLit eb)
+            | Call(efun, eparam) -> Call(resolveStrdLit efun, resolveStrdLit eparam)
+            | TplConstr(es) -> TplConstr(Array.map resolveStrdLit es)
+            | Match(edata, cases) ->
+                Match(resolveStrdLit edata,
+                       List.map (fun (p, g, r) -> (resolveStrdLit p, resolveStrdLit g, resolveStrdLit r)) cases)
+            | AsBinding(e, n) -> AsBinding(resolveStrdLit e, n)
+            | AdtConstr _ -> expr
+            | Cst _ -> expr
+            | Var _ -> expr
+            | WildCard -> expr
+            | Quote _ -> expr
+         resolveStrdLit expression
+
     member public this.Run (types : typeenv) (e : expr) : value =
          eval e [] types
 
@@ -91,9 +122,10 @@ type Interpreter() =
          prettyPrint vl
 
     member public this.Interpret (str : string) : unit =
-       let parsed = this.ParseProgramFromString str
-       let checkd = checkExpr (snd parsed)
-       let ran = this.Run (fst parsed) (snd parsed)
+       let (decls, parsed) = this.ParseProgramFromString str
+       let replaced = this.ResolveStructuredDataLiterals parsed
+       let checkd = checkExpr replaced
+       let ran = this.Run decls checkd
        let prettied = this.PrettyPrintString ran
        printfn "%s" prettied
   end

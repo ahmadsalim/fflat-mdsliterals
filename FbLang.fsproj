@@ -40,6 +40,7 @@
     <Compile Include="FbAst.fs" />
     <Compile Include="FbPar.fs" />
     <Compile Include="FbLex.fs" />
+    <Compile Include="FbCheck.fs" />
     <Compile Include="FbEval.fs" />
     <Compile Include="FbInterpret.fs" />
     <None Include="FbLex.fsl" />

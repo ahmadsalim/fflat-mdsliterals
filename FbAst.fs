@@ -42,16 +42,20 @@ type valtype =
 
 type expr =
   | Cst of valtype
-  | StrdLit of string * string                         (* (literalType, literalValue) *)
+  | StrdLit of string * string                         (* (literalType, literalValue)  *)
   | Var of string
   | Let of string * expr * expr
   | Prim of string * expr * expr
   | If of expr * expr * expr
-  | Letfuns of (string * string * expr) list * expr    (* (f, x, fBody, letBody)      *)
+  | Letfuns of (string * string * expr) list * expr    (* (f, x, fBody, letBody)       *)
   | Fun of string * expr
   | Call of expr * expr
   | TplConstr of expr array
-  | AdtConstr of string                                (* (constructor name)          *)
+  | AdtConstr of string                                (* (constructor name)           *)
+  | Match of expr * (expr * expr * expr) list          (* (expr, [(pat, guard, res)...]*)
+  | AsBinding of expr * string                         (* as pattern                   *)
+  | WildCard
+
 
 (** Smart constuctors for expr **)
 

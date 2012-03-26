@@ -60,6 +60,10 @@ let keyword (s:string) =
     | "type"      -> Type_t
     | "of"        -> Of_t
     | "requires"  -> Req_t
+    | "as"        -> As_t
+    | "match"     -> Match_t
+    | "with"      -> With_t
+    | "when"      -> When_t
     | Basetype typ-> typ
     | _           -> Name_t s
 }
@@ -110,6 +114,7 @@ rule Token = parse
     | whitespace* ','                                      { Comma_t                                                        }
     | whitespace* "::"                                     { Cons_t                                                         }
     | whitespace* ':'                                      { Colon_t                                                        }
+    | whitespace* '_'                                      { WildCard_t                                                     }
     | whitespace+                                          { Token lexbuf                                                   }
     | _                                                    { failwith "Lexer error: illegal symbol"                         }
 

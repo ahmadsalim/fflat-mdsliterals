@@ -38,6 +38,12 @@ let rec getType (v : value) (types : typeenv) : typename =
         TypTpl (List.map (fun vl -> getType vl types) (Array.toList vals))
     | Adt(name, _) ->
         TypAdt ( let (typ,_,_) = (Map.find name types) in typ )
+    | AdtClosure(name) ->
+      let (rettyp, args,_) = Map.find name types
+      match args with
+      | []             -> failwith "Unexpected ADT closure with no parameters"
+      | [(_, typ)]     -> TypFun(typ, TypAdt(rettyp))
+      | _              -> TypFun(TypTpl(args |> List.map (snd)), TypAdt(rettyp))
     | Closure _    ->
         TypFun(TypDyn,TypDyn) //Only dynamic functions are supported as there is no typechecking
 
@@ -53,6 +59,36 @@ let rec typeCastable (typTo : typename) (typFrom : typename) : bool =
     | (TypFun(fTo, xTo), TypFun(fFrom, xFrom))
         when typeCastable fTo fFrom && typeCastable xTo xFrom -> true
     | _ -> false
+
+
+
+let rec matchPattern (vl : value) (pat : expr) : value env option =
+    match (vl, pat) with
+    | (Val v1, Cst v2) ->
+         if v1 = v2 then Some([]) else None
+    | (Tpl vs, TplConstr ps) ->
+         matchTuple vs ps
+    | (Adt(nm1,[||]), AdtConstr(nm2)) ->
+         if nm1 = nm2 then Some([]) else None
+    | (Adt(nm1, [| v |]), Call(AdtConstr(nm2), p)) ->
+         if nm1 = nm2 then matchPattern v p else None
+    | (Adt(nm1, vs), Call(AdtConstr(nm2), ps)) ->
+         if nm1 = nm2 then matchPattern (Tpl vs) ps else None
+    | (_, AsBinding(p, nm)) ->
+         let matched = matchPattern vl p
+         match matched with
+         | None -> None
+         | Some(env) -> Some((nm, vl)::env)
+    | (_, Var nm) -> Some([(nm, vl)])
+    | (_, WildCard) -> Some([])
+    | _ -> None
+and matchTuple (vs : value array) (pats : expr array) : value env option =
+    Array.zip vs pats
+    |> Array.map (fun (vl, pat) -> matchPattern vl pat)
+    |> Array.fold(fun res bnds -> match (res, bnds) with
+                                  | (_, None) -> None
+                                  | (None, _) -> None
+                                  | (Some(rEnv), Some(bEnv)) -> Some(rEnv @ bEnv)) (Some [])
 
 
 let rec eval (e : expr) (env : value env) (types : typeenv) : value =
@@ -142,4 +178,19 @@ let rec eval (e : expr) (env : value env) (types : typeenv) : value =
         match args with
         | [] -> Adt(name, [||])
         | _  -> AdtClosure(name)
+      | Match(x, pats) ->
+        let xVal = eval x env types
+        let rec findPattern vl pats =
+           match pats with
+           | [] -> failwithf "Unable to pattern match value"
+           | (pat, guard, eRes)::rest ->
+             match matchPattern vl pat with
+             | Some(env') ->
+                match eval guard env' types with
+                | Val(Bool true) -> eval eRes (env' @ env) types
+                | Val(Bool false) -> findPattern vl rest
+                | _ -> failwith "Invaild guard on pattern"
+             | None -> findPattern vl rest
+        findPattern xVal pats
       | StrdLit(typ, _) -> failwithf "unparsed structured data literal of type %s" typ
+      | _               -> failwith  "unsupported expression"

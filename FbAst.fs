@@ -99,6 +99,8 @@ type typeenv = Map<string, string * (string * typename) list * expr>
 (* ADT Helper functions  *)
 let addDataDeclToEnv (decl : datadecl) (env:typeenv) : typeenv =
     let (typname, constrsdecl) = decl
+    if env |> Map.fold (fun s k v -> Set.add v s) Set.empty |> Set.exists (fun (t,_,_) -> t = typname)
+      then failwithf "type %s is already declared" typname
     List.fold (fun env (constrname, elements, guard) ->
         if not (Map.containsKey constrname env)
         then Map.add constrname (typname, elements, guard) env
@@ -110,7 +112,5 @@ let addTypeVarToList tvar tvars =
     else tvar::tvars
 
 let defaultAdts =
-    let typenv = Map.empty
-    let listDecl = ("list", [("@Nil",  [],                                          Cst(Bool true));
-                             ("@Cons", [("head", TypDyn);("tail", TypAdt("list"))], Cst(Bool true))])
-    addDataDeclToEnv listDecl typenv
+      [("list", [("@Nil",  [],                                          Cst(Bool true));
+                ("@Cons", [("head", TypDyn);("tail", TypAdt("list"))], Cst(Bool true))])]

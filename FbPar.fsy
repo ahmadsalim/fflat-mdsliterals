@@ -15,7 +15,7 @@ open FbAst;
 %token <string>          Name_t
 %token <string>          ConstrName_t
 
-%token <FbAst.typename>  TypeName_t
+%token <typename>        TypeName_t
 
 %token Type_t    Of_t       Req_t   Colon_t
 %token Pipe_t
@@ -49,8 +49,8 @@ open FbAst;
 %start Main
 %start Expr
 
-%type <typeenv * FbAst.expr> Main
-%type <FbAst.expr>           Expr AtExpr Const AppExpr
+%type <datadecl list * expr>      Main
+%type <expr>                      Expr AtExpr Const AppExpr
 
 %%
 
@@ -60,7 +60,7 @@ Main:
 
 TypeDecls:
     /* empty */                              { defaultAdts                                      }
-  | TypeDecl TypeDecls                       { addDataDeclToEnv $1 $2                           }
+  | TypeDecl TypeDecls                       { $1::$2                                           }
 ;
 
 TypeDecl:

@@ -30,10 +30,12 @@ let mkStucturedDataLiteralParser (handledDataType : string) (resultDataTypes : d
 
 type Interpreter() =
   class
+    let registeredTypes = ref Map.empty
     let strdLitParsers =
       new System.Collections.Generic.Dictionary<string, IStructuredDataLiteralParser>()
 
     member public this.RegisterLiteralParser (parser : IStructuredDataLiteralParser) : unit =
+      registeredTypes := Seq.fold (fun typeenv decl -> addDataDeclToEnv decl typeenv) !registeredTypes parser.ResultDataTypes
       strdLitParsers.Add(parser.HandledDataType, parser)
 
     member public this.ParseExpressionFromString (str : string) : expr =
@@ -44,7 +46,7 @@ type Interpreter() =
           | exn -> let pos = lexbuf.EndPos
                    failwithf "%s near line %d, column %d\n"
                      (exn.Message) (pos.Line+1) pos.Column
-    member public this.ParseProgramFromString (str : string) : typeenv * expr =
+    member public this.ParseProgramFromString (str : string) : datadecl list * expr =
           let lexbuf = Lexing.LexBuffer<char>.FromString(str)
           try
               FbPar.Main FbLex.Token lexbuf
@@ -53,7 +55,7 @@ type Interpreter() =
                    failwithf "%s near line %d, column %d\n"
                        (exn.Message) (pos.Line+1) pos.Column
 
-    member public this.ParseProgramFromFile (filename : string) : typeenv * expr =
+    member public this.ParseProgramFromFile (filename : string) : datadecl list * expr =
          use reader = new StreamReader(filename)
          let lexbuf = Lexing.LexBuffer<char>.FromTextReader reader
          try
@@ -125,7 +127,7 @@ type Interpreter() =
        let (decls, parsed) = this.ParseProgramFromString str
        let replaced = this.ResolveStructuredDataLiterals parsed
        let checkd = checkExpr replaced
-       let ran = this.Run decls checkd
+       let ran = this.Run <| List.fold (fun types decl -> addDataDeclToEnv decl types) !registeredTypes decls <| checkd
        let prettied = this.PrettyPrintString ran
        printfn "%s" prettied
   end

@@ -89,7 +89,19 @@ rule Token = parse
                                                            }
     | whitespace* "\""                                     { ScanString (System.Text.StringBuilder()) lexbuf                }
     | whitespace* '%' ['a'-'z']+ '{'                       {
-                                                             ScanStrdLit (getType (lexemeAsString lexbuf))
+                                                             ScanStrdLitBrc (getType (lexemeAsString lexbuf))
+                                                                             (System.Text.StringBuilder()) lexbuf
+                                                           }
+    | whitespace* '%' ['a'-'z']+ '['                       {
+                                                             ScanStrdLitBra (getType (lexemeAsString lexbuf))
+                                                                             (System.Text.StringBuilder()) lexbuf
+                                                           }
+    | whitespace* '%' ['a'-'z']+ '('                       {
+                                                             ScanStrdLitPar (getType (lexemeAsString lexbuf))
+                                                                             (System.Text.StringBuilder()) lexbuf
+                                                           }
+    | whitespace* '%' ['a'-'z']+ '|'                       {
+                                                             ScanStrdLitPip (getType (lexemeAsString lexbuf))
                                                                              (System.Text.StringBuilder()) lexbuf
                                                            }
     | whitespace* '='                                      { Eq_t                                                           }
@@ -144,18 +156,58 @@ and ScanString currStr = parse
                                                              ignore <| currStr.Append(lexemeAsString lexbuf);
                                                              ScanString currStr lexbuf
                                                            }
-and ScanStrdLit t currStr = parse
+and ScanStrdLitBrc t currStr = parse
       "{{"                                                 {
                                                              ignore <| currStr.Append("{");
-                                                             ScanStrdLit t currStr lexbuf
+                                                             ScanStrdLitBrc t currStr lexbuf
                                                            }
     | "}}"                                                 {
                                                              ignore <| currStr.Append("}");
-                                                             ScanStrdLit t currStr lexbuf
+                                                             ScanStrdLitBrc t currStr lexbuf
                                                            }
     | "}"                                                  { StrdLit_t(t, currStr.ToString())                               }
     | "{"                                                  { failwith "Lexer error: unexpected unescaped { in data literal" }
     | _                                                    {
                                                              ignore <| currStr.Append(lexemeAsString lexbuf);
-                                                             ScanStrdLit t currStr lexbuf
+                                                             ScanStrdLitBrc t currStr lexbuf
+                                                           }
+and ScanStrdLitBra t currStr = parse
+      "[["                                                 {
+                                                             ignore <| currStr.Append("[");
+                                                             ScanStrdLitBra t currStr lexbuf
+                                                           }
+    | "]]"                                                 {
+                                                             ignore <| currStr.Append("]");
+                                                             ScanStrdLitBra t currStr lexbuf
+                                                           }
+    | "]"                                                  { StrdLit_t(t, currStr.ToString())                               }
+    | "["                                                  { failwith "Lexer error: unexpected unescaped [ in data literal" }
+    | _                                                    {
+                                                             ignore <| currStr.Append(lexemeAsString lexbuf);
+                                                             ScanStrdLitBra t currStr lexbuf
+                                                           }
+and ScanStrdLitPar t currStr = parse
+      "(("                                                 {
+                                                             ignore <| currStr.Append("(");
+                                                             ScanStrdLitPar t currStr lexbuf
+                                                           }
+    | "))"                                                 {
+                                                             ignore <| currStr.Append(")");
+                                                             ScanStrdLitPar t currStr lexbuf
+                                                           }
+    | ")"                                                  { StrdLit_t(t, currStr.ToString())                               }
+    | "("                                                  { failwith "Lexer error: unexpected unescaped ( in data literal" }
+    | _                                                    {
+                                                             ignore <| currStr.Append(lexemeAsString lexbuf);
+                                                             ScanStrdLitPar t currStr lexbuf
+                                                           }
+and ScanStrdLitPip t currStr = parse
+      "||"                                                 {
+                                                             ignore <| currStr.Append("|");
+                                                             ScanStrdLitPip t currStr lexbuf
+                                                           }
+    | "|"                                                  { StrdLit_t(t, currStr.ToString())                               }
+    | _                                                    {
+                                                             ignore <| currStr.Append(lexemeAsString lexbuf);
+                                                             ScanStrdLitPip t currStr lexbuf
                                                            }

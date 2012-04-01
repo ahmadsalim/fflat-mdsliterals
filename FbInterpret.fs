@@ -73,7 +73,8 @@ type Interpreter() =
                                   (this.ParseExpressionFromString) (literal)) datatype
             | StrdLit(datatype, literal) ->
                 failwithf "Unregistered parser for structured data literal of type %s" datatype
-            | Let(name, er, eb) -> Let(name, resolveStrdLit er, resolveStrdLit eb)
+            | Lets(bs, eb) ->
+                  Lets(List.map (fun (name, er) -> (name, resolveStrdLit er)) bs, resolveStrdLit eb)
             | Prim(opr, e1, e2) -> Prim(opr, resolveStrdLit e1, resolveStrdLit e2)
             | If(ec, et, ef)    -> If(resolveStrdLit ec, resolveStrdLit et, resolveStrdLit ef)
             | Letfuns(efuns, eb) ->
@@ -101,7 +102,7 @@ type Interpreter() =
           match vl with
           | Val(Bool b) -> sprintf "%A" b
           | Val(Int i)  -> sprintf "%d" i
-          | Val(Str s)  -> sprintf "%A" s
+          | Val(Str s)  -> sprintf "%s" s
           | Tpl(vals)   -> sprintf "(%s)" (System.String.Join(",", Array.map (prettyPrint) vals))
           | Adt("@Nil", _) -> "[]"
           | Adt("@Cons", [| head; tail |] ) ->

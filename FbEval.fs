@@ -130,9 +130,14 @@ let rec eval (e : expr) (env : value env) (types : typeenv) : value =
                    | ("&&", Val(Bool b1), Val(Bool b2))-> Val(Bool(b1 && b2))
                    | ("||", Val(Bool b1), Val(Bool b2))-> Val(Bool(b1 || b2))
                    |  _ -> failwith "unknown primitive or wrong type"
-      | Let(x, eRhs, letBody) ->
-        let xVal = eval eRhs env types
-        let letEnv = (x, xVal) :: env
+      | Lets(bs, letBody) ->
+        let rec bindValues bs acc =
+            match bs with
+            | [] -> acc
+            | (x, eRhs)::rest ->
+               let xVal = eval eRhs env types
+               bindValues rest ((x, xVal)::acc)
+        let letEnv = bindValues bs env
         eval letBody letEnv types
       | If(e1, e2, e3) ->
         match eval e1 env types with

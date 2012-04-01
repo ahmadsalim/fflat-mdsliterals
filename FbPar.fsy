@@ -153,6 +153,16 @@ FunBindings:
   | FunBinding And_t FunBindings             { $1::$3                                           }
 ;
 
+VarBinding:
+    Name_t Eq_t Expr                         { ($1, $3)                                         }
+;
+
+VarBindings:
+    VarBinding                               { $1::[]                                           }
+  | VarBinding And_t VarBindings             { $1::$3                                           }
+;
+
+
 AtExpr:
     Const                                    { $1                                               }
   | WildCard_t                               { WildCard                                         }
@@ -160,7 +170,7 @@ AtExpr:
   | Name_t                                   { Var $1                                           }
   | ConstrName_t                             { AdtConstr $1                                     }
   | LPar_t TupleExprs RPar_t                 { mkTplConstr $2                                   }
-  | Let_t Name_t Eq_t Expr In_t Expr End_t   { Let($2, $4, $6)                                  }
+  | Let_t VarBindings In_t Expr End_t        { Lets($2, $4)                                     }
   | Let_t FunBindings In_t Expr End_t        { Letfuns($2, $4)                                  }
   | LPar_t Expr RPar_t                       { $2                                               }
 ;

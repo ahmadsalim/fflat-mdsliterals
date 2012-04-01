@@ -8,7 +8,7 @@ let rec checkExpr expr =
   | Prim(_, e1, e2) -> ignore (checkExpr e1); ignore(checkExpr e2)
   | AdtConstr _  -> ()
   | Var _  -> ()
-  | Let(_, er, eb) -> ignore (checkExpr er); ignore(checkExpr eb)
+  | Lets(bs, eb) -> ignore (List.iter(fun (b, er) -> ignore (checkExpr er)) bs); ignore(checkExpr eb)
   | Letfuns(funs, eb) ->List.iter (fun (_,_,er) -> ignore(checkExpr er)) funs; ignore(checkExpr eb)
   | If(ec, et, ef) -> ignore(checkExpr ec); ignore(checkExpr et); ignore(checkExpr ef)
   | Fun(_, e) -> ignore(checkExpr e)

@@ -78,7 +78,7 @@ ConstrDecl:
 ;
 
 TypedVars:
-    TypedVar Times_t TypedVar                { addTypeVarToList $1 [$3]                         }
+    TypedVar                                 { $1::[]                                           }
   | TypedVar Times_t TypedVars               { addTypeVarToList $1 $3                           }
 ;
 
@@ -95,7 +95,7 @@ TypeSpec:
     TypeName_t                               { $1                                               }
   | Name_t                                   { TypAdt $1                                        }
   | TypeSpec Arrow_t TypeSpec                { TypFun($1, $3)                                   }
-  | LPar_t TypeSpecs RPar_t                  { TypTpl $2                                        }
+  | LPar_t TypeSpecs RPar_t                  { mkTypTpl $2                                      }
 ;
 
 GuardClause:

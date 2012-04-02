@@ -97,6 +97,12 @@ type datadecl = string * constrdecl list
 type typeenv = Map<string, string * (string * typename) list * expr>
 
 (* ADT Helper functions  *)
+let mkTypTpl typs =
+  match typs with
+  | [] -> failwithf "Unknown type list with no arguments"
+  | [x] -> x
+  | _ -> TypTpl typs
+
 let addDataDeclToEnv (decl : datadecl) (env:typeenv) : typeenv =
     let (typname, constrsdecl) = decl
     if env |> Map.fold (fun s k v -> Set.add v s) Set.empty |> Set.exists (fun (t,_,_) -> t = typname)

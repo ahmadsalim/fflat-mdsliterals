@@ -81,15 +81,25 @@ let mkList exprs =
     List.fold(fun rest expr -> Call(AdtConstr("@Cons"), TplConstr([| expr; rest |]))) (AdtConstr("@Nil")) (List.rev exprs)
 
 
-(* Type declarations for data *)
+
+(* A type is int, bool, function, or type variable: *)
+
 type typename =
-  | TypInt
-  | TypBool
-  | TypStr
-  | TypTpl of typename list
-  | TypAdt of string
-  | TypDyn
-  | TypFun of typename * typename
+     | TypInt                              (* integers                   *)
+     | TypBool                             (* booleans                   *)
+     | TypStr                              (* strings                    *)
+     | TypTpl of typename list             (* tuples                     *)
+     | TypAdt of string                    (* adts                       *)
+     | TypDyn                              (* dynamic (to be removed)    *)
+     | TypFun of typename * typename       (* (argumenttype, resulttype) *)
+     | TypVar of typevar                   (* type variable              *)
+
+and tyvarkind =
+     | NoLink of string                    (* uninstantiated type var.   *)
+     | LinkTo of typename                  (* instantiated to typ        *)
+
+and typevar =
+     (tyvarkind * int) ref                 (* kind and binding level     *)
 
 (* ADT declaration types *)
 type constrdecl = string * (string * typename) list * expr     (* (name, datatypes, guard) *)

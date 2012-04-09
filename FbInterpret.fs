@@ -102,7 +102,7 @@ type Interpreter() =
           match vl with
           | Val(Bool b) -> sprintf "%A" b
           | Val(Int i)  -> sprintf "%d" i
-          | Val(Str s)  -> sprintf "%s" s
+          | Val(Str s)  -> sprintf "%A" s
           | Tpl(vals)   -> sprintf "(%s)" (System.String.Join(",", Array.map (prettyPrint) vals))
           | Adt("@Nil", _) -> "[]"
           | Adt("@Cons", [| head; tail |] ) ->

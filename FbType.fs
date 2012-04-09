@@ -304,9 +304,31 @@ let rec tyinf e0 =
         | TplConstr(exprs) ->
           let ts = List.map(typ lvl env) (Array.toList exprs)
           TypTpl ts
+        | Match(expr, cases) ->
+            let te = typ lvl env expr
+            let tr = TypVar(newTypeVar lvl)
+            List.iter(fun (pat, guard, ret) -> 
+                let (tp, pEnv) = typPat lvl pat;
+                let env' = pEnv @ env
+                unify te tp;
+                unify TypBool (typ lvl env' guard);
+                unify tr (typ lvl env' ret)
+                ) cases ;
+            tr
         | StrdLit(typ, _) -> failwithf "unparsed structured data literal of type %s" typ
         | _ -> failwithf "type inference is not yet supported for expr: %A" e
-    in typ 0 [] e0
+    and typPat (lvl : int) (pat : expr) : typename * (string * typescheme) list =
+        match pat with
+        | Cst(Int i)  -> (TypInt, [])
+        | Cst(Str s)  -> (TypStr, [])
+        | Cst(Bool b) -> (TypBool, [])
+        | Var x -> let tv = TypVar(newTypeVar lvl) in (tv, [(x, generalize lvl tv)])
+        | WildCard -> (TypVar(newTypeVar lvl), [])
+        | AsBinding(p, nm) -> let (tp, pEnv) = typPat lvl p in (tp, (nm, generalize lvl tp)::pEnv)
+        | TplConstr(ps) ->
+            let patTypRes = Array.map(fun p -> typPat lvl p) ps |> List.ofArray
+            (TypTpl(List.map fst patTypRes), List.fold (@) [] (List.map snd patTypRes))
+    typ 0 [] e0
 
 let inferType e =
     (tyvarno := 0;

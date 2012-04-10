@@ -16,6 +16,7 @@ open FbAst;
 %token <string>          ConstrName_t
 
 %token <typename>        TypeName_t
+%token <string>          TypeParam_t
 
 %token Type_t    Of_t       Req_t   Colon_t
 %token Pipe_t
@@ -31,8 +32,10 @@ open FbAst;
 %token As_t      WildCard_t
 %token Match_t   With_t     When_t
 
+
 /* lowest precedence  */
 %right    Arrow_t
+%right    Comma_t
 %left     Else_t
 %left     AndAlso_t OrElse_t
 %left     Eq_t      Ne_t
@@ -64,7 +67,17 @@ TypeDecls:
 ;
 
 TypeDecl:
-    Type_t Name_t Eq_t ConstrDecls           { ($2, $4)                                         }
+    Type_t TypeDeclName Eq_t ConstrDecls     { ($2, $4)                                         }
+;
+
+TypeDeclName:
+    Name_t Lt_t TypeDeclParams Gt_t          { ($3, $1)                                         }
+  | Name_t                                   { ([], $1)                                         }
+;
+
+TypeDeclParams:
+    TypeParam_t                              { $1::[]                                           }
+  | TypeParam_t Comma_t TypeDeclParams       { $1::$3                                           }
 ;
 
 ConstrDecls:
@@ -87,15 +100,26 @@ TypedVar:
 ;
 
 TypeSpecs:
-    TypeSpec                                 { $1::[]                                           }
+    TypeSpec Times_t TypeSpec                { $1::[]                                           }
   | TypeSpec Times_t TypeSpecs               { $1::$3                                           }
 ;
 
 TypeSpec:
     TypeName_t                               { $1                                               }
-  | Name_t                                   { TypAdt $1                                        }
+  | TypeParam_t                              { TypVarSocket($1)                                 }
+  | TypeAlgebraicName                        { $1                                               }
   | TypeSpec Arrow_t TypeSpec                { TypFun($1, $3)                                   }
   | LPar_t TypeSpecs RPar_t                  { mkTypTpl $2                                      }
+;
+
+TypeAlgebraicName:
+    Name_t Lt_t TypeParams Gt_t              { TypAdt($3, $1)                                   }
+  | Name_t                                   { TypAdt([], $1)                                   }
+;
+
+TypeParams:
+    TypeSpec                                 { $1::[]                                           }
+  | TypeSpec Comma_t TypeParams              { $1::$3                                           }
 ;
 
 GuardClause:

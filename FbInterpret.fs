@@ -11,7 +11,7 @@ open Microsoft.FSharp.Text.Lexing
 open FbAst
 open FbEval
 open FbCheck
-
+open FbType
 
 type IStructuredDataLiteralParser =
   interface
@@ -128,7 +128,9 @@ type Interpreter() =
        let (decls, parsed) = this.ParseProgramFromString str
        let replaced = this.ResolveStructuredDataLiterals parsed
        let checkd = checkExpr replaced
-       let ran = this.Run <| List.fold (fun types decl -> addDataDeclToEnv decl types) !registeredTypes decls <| checkd
+       let env = List.fold (fun types decl -> addDataDeclToEnv decl types) !registeredTypes decls
+       let typed = inferType checkd env 
+       let ran = this.Run env checkd
        let prettied = this.PrettyPrintString ran
-       printfn "%s" prettied
+       printfn "%s : %s" prettied typed
   end

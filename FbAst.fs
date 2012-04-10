@@ -89,10 +89,10 @@ type typename =
      | TypBool                             (* booleans                   *)
      | TypStr                              (* strings                    *)
      | TypTpl of typename list             (* tuples                     *)
-     | TypAdt of string                    (* adts                       *)
-     | TypDyn                              (* dynamic (to be removed)    *)
+     | TypAdt of typename list * string    (* adt of types               *)
      | TypFun of typename * typename       (* (argumenttype, resulttype) *)
      | TypVar of typevar                   (* type variable              *)
+     | TypVarSocket of string              (* represents a type variable at a data declaration *)
 
 and tyvarkind =
      | NoLink of string                    (* uninstantiated type var.   *)
@@ -102,9 +102,9 @@ and typevar =
      (tyvarkind * int) ref                 (* kind and binding level     *)
 
 (* ADT declaration types *)
-type constrdecl = string * (string * typename) list * expr     (* (name, datatypes, guard) *)
-type datadecl = string * constrdecl list
-type typeenv = Map<string, string * (string * typename) list * expr>
+type constrdecl = string * (string * typename) list * expr     (* (contructor name, datatypes, guard) *)
+type datadecl = (string list * string) * constrdecl list       (* ((type vars, type name), constructors) *)
+type typeenv = Map<string, (string list * string) * (string * typename) list * expr>
 
 (* ADT Helper functions  *)
 let mkTypTpl typs =
@@ -114,12 +114,12 @@ let mkTypTpl typs =
   | _ -> TypTpl typs
 
 let addDataDeclToEnv (decl : datadecl) (env:typeenv) : typeenv =
-    let (typname, constrsdecl) = decl
-    if env |> Map.fold (fun s k v -> Set.add v s) Set.empty |> Set.exists (fun (t,_,_) -> t = typname)
+    let ((tvs, typname), constrsdecl) = decl
+    if env |> Map.fold (fun s k v -> Set.add v s) Set.empty |> Set.exists (fun ((_,t),_,_) -> t = typname)
       then failwithf "type %s is already declared" typname
     List.fold (fun env (constrname, elements, guard) ->
         if not (Map.containsKey constrname env)
-        then Map.add constrname (typname, elements, guard) env
+        then Map.add constrname ((tvs, typname), elements, guard) env
         else failwithf "Constructor %s is already defined" constrname) env constrsdecl
 
 let addTypeVarToList tvar tvars =
@@ -127,6 +127,8 @@ let addTypeVarToList tvar tvars =
     then failwithf "%s is already bound in constructor" (fst tvar)
     else tvar::tvars
 
-let defaultAdts =
-      [("list", [("@Nil",  [],                                          Cst(Bool true));
-                ("@Cons", [("head", TypDyn);("tail", TypAdt("list"))], Cst(Bool true))])]
+let defaultAdts : datadecl list =
+      [((["a"],"list"),        [("@Nil",  [],                                                                           Cst(Bool true));
+                                ("@Cons", [("head", TypVarSocket("a")); ("tail", TypAdt([TypVarSocket("a")], "list"))], Cst(Bool true))]);
+       ((["a";"b"], "either"), [("Left",  [("value", TypVarSocket("a"))],                                               Cst(Bool true));
+                                ("Right", [("value", TypVarSocket("b"))],                                               Cst(Bool true))])]

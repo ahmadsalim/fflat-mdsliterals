@@ -41,7 +41,6 @@ let (|Basetype|_|) (s:string) =
     | "int"    -> Some (TypeName_t (TypInt))
     | "string" -> Some (TypeName_t (TypStr))
     | "bool"   -> Some (TypeName_t (TypBool))
-    | "dynamic"-> Some (TypeName_t (TypDyn))
     | _        -> None
 
 let keyword (s:string) =
@@ -71,6 +70,7 @@ let keyword (s:string) =
 }
 
 let whitespace = ['\t' ' ']
+let name = ['a'-'z']['a'-'z''A'-'Z''0'-'9''_']*'?'?
 
 rule Token = parse
       '\r'                                                 { Token lexbuf                                                   }
@@ -79,7 +79,7 @@ rule Token = parse
                                                              Token lexbuf
                                                            }
     | whitespace* ['0'-'9']+                               { CstInt_t (System.Int32.Parse (lexemeAsString lexbuf))          }
-    | whitespace* ['a'-'z']['a'-'z''A'-'Z''0'-'9''_']*'?'? { keyword (lexemeAsString lexbuf)                                }
+    | whitespace* name                                     { keyword (lexemeAsString lexbuf)                                }
     | whitespace* ['A'-'Z']['a'-'z''A'-'Z''0'-'9']*        { ConstrName_t ((lexemeAsString lexbuf).Trim())                  }
     | whitespace* "(*"                                     {
                                                              commentStart := lexbuf.StartPos;
@@ -129,6 +129,10 @@ rule Token = parse
     | whitespace* "::"                                     { Cons_t                                                         }
     | whitespace* ':'                                      { Colon_t                                                        }
     | whitespace* '_'                                      { WildCard_t                                                     }
+    | whitespace* '\'' name                                {
+                                                             let s = (lexemeAsString lexbuf).Trim()
+                                                             in TypeParam_t (s.Substring(1, s.Length - 1))
+                                                           } 
     | whitespace+                                          { Token lexbuf                                                   }
     | _                                                    { failwith "Lexer error: illegal symbol"                         }
 

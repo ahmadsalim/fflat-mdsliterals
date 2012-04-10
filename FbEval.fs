@@ -27,41 +27,6 @@ type value =
   | Closure of string * expr * value lazyenv  (* (f, x, fBody, fDeclEnv) *)
   | AdtClosure of string                      (* constructor closure     *)
 
-let rec getType (v : value) (types : typeenv) : typename =
-    match v with
-    | Val(basic) ->
-        match basic with
-        | Int _ -> TypInt
-        | Str _ -> TypStr
-        | Bool _-> TypBool
-    | Tpl(vals)  ->
-        TypTpl (List.map (fun vl -> getType vl types) (Array.toList vals))
-    | Adt(name, _) ->
-        TypAdt ( let (typ,_,_) = (Map.find name types) in typ )
-    | AdtClosure(name) ->
-      let (rettyp, args,_) = Map.find name types
-      match args with
-      | []             -> failwith "Unexpected ADT closure with no parameters"
-      | [(_, typ)]     -> TypFun(typ, TypAdt(rettyp))
-      | _              -> TypFun(TypTpl(args |> List.map (snd)), TypAdt(rettyp))
-    | Closure _    ->
-        TypFun(TypDyn,TypDyn) //Only dynamic functions are supported as there is no typechecking
-
-let rec typeCastable (typTo : typename) (typFrom : typename) : bool =
-    match (typTo, typFrom) with
-    | (TypDyn,  _) -> true
-    | (TypInt,  TypInt) -> true
-    | (TypStr,  TypStr) -> true
-    | (TypBool, TypBool) -> true
-    | (TypTpl(valsTo), TypTpl(valsFrom))
-            when List.forall2 (fun vT vF -> typeCastable vT vF) valsTo valsFrom -> true
-    | (TypAdt(nameTo), TypAdt(nameFrom)) when nameTo = nameFrom -> true
-    | (TypFun(fTo, xTo), TypFun(fFrom, xFrom))
-        when typeCastable fTo fFrom && typeCastable xTo xFrom -> true
-    | _ -> false
-
-
-
 let rec matchPattern (vl : value) (pat : expr) : value env option =
     match (vl, pat) with
     | (Val v1, Cst v2) ->
@@ -161,11 +126,7 @@ let rec eval (e : expr) (env : value env) (types : typeenv) : value =
            | AdtClosure name ->
               let (_, args, guard) = Map.find name types
               let rec bindArguments args exprs =
-                   List.fold2 (fun rest arg vl ->
-                                if typeCastable (snd arg) (getType vl types)
-                                   then (fst arg, vl) :: rest
-                                   else failwithf "Uncompatible type %s for arg %s in constructor %s" ((snd arg).ToString()) (fst arg) (name)
-                                   ) [] args exprs
+                   List.fold2 (fun rest arg vl ->(fst arg, vl) :: rest) [] args exprs
 
               let argVal = eval eArg env types
               let vals   = match argVal with

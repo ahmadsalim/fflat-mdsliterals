@@ -78,8 +78,8 @@ let rec freeTypeVars t : typevar list =
     | TypVar tv     -> [tv]
     | TypFun(t1,t2) -> union(freeTypeVars t1, freeTypeVars t2)
     | TypTpl(typs)  -> List.fold(fun freeVars t -> union(freeVars, freeTypeVars t)) [] typs
-    | TypAdt(name)  -> failwith "freeTypeVars is not yet implemented on ADTs"
-    | TypDyn        -> failwith "freeTypeVars is not support for dynamic type"
+    | TypAdt(typs, name) -> List.fold(fun freeVars t -> union(freeVars, freeTypeVars t)) [] typs
+    | TypVarSocket _ -> failwith "freeTypeVars is not supported for type var socket" 
 
 
 let occurCheck tyvar tyvars =
@@ -106,14 +106,13 @@ let rec linkVarToType tyvar t =
 
 let rec typeToString t : string =
     match t with
-      | TypInt         -> "int"
-      | TypBool        -> "bool"
-      | TypStr         -> "string"
-      | TypDyn         -> "dynamic"
-      | TypAdt(name)   -> name
-      | TypVar _       -> failwith "typeToString impossible"
-      | TypFun(t1, t2) -> "function"
-      | TypTpl _       -> "tuple"
+      | TypInt                     -> "int"
+      | TypBool                    -> "bool"
+      | TypStr                     -> "string"
+      | TypAdt(ts, name)           -> List.fold (fun s t -> typeToString t + " " + s) "" ts + name
+      | TypVar _ | TypVarSocket _  -> failwith "typeToString impossible"
+      | TypFun(t1, t2)             -> "function"
+      | TypTpl _                   -> "tuple"
 
 (* Unify two types, equating type variables with types as necessary *)
 
@@ -123,8 +122,11 @@ let rec unify t1 t2 : unit =
     in match (t1', t2') with
        | (TypInt, TypInt) -> ()
        | (TypBool, TypBool) -> ()
+       | (TypStr, TypStr) -> ()
        | (TypFun(t11, t12), TypFun(t21, t22)) -> (unify t11 t21; unify t12 t22)
        | (TypTpl(ts1), TypTpl(ts2)) ->
+              List.iter(fun (t1, t2) -> unify t1 t2) <| List.zip ts1 ts2
+       | (TypAdt(ts1, nm1), TypAdt(ts2, nm2)) when nm1 = nm2 ->
               List.iter(fun (t1, t2) -> unify t1 t2) <| List.zip ts1 ts2
        | (TypVar tv1, TypVar tv2) ->
          let (_, tv1level) = !tv1
@@ -137,10 +139,10 @@ let rec unify t1 t2 : unit =
        | (TypInt,     t)  -> failwith ("type error: int and " + typeToString t)
        | (TypBool,     t) -> failwith ("type error: bool and " + typeToString t)
        | (TypStr,      t) -> failwith ("type error: string and " + typeToString t)
-       | (TypDyn,     t)  -> failwith ("type error: dynamic and " + typeToString t)
-       | (TypAdt(name), t)-> failwith (sprintf("type error: %s and ") name + typeToString t)
+       | (TypAdt(_, name), t)-> failwith (sprintf("type error: %s and ") name + typeToString t)
        | (TypTpl _, t)     -> failwith ("type error: tuple and " + typeToString t)
        | (TypFun _,   t)  -> failwith ("type error: function and " + typeToString t)
+       | (TypVarSocket _, t) -> failwith ("type error: cannot unify type var socket")
 
 (* Generate fresh type variables *)
 
@@ -183,8 +185,8 @@ let rec copyType subst t : typename =
     | TypBool       -> TypBool
     | TypStr        -> TypStr
     | TypTpl(ts)    -> TypTpl(List.map(copyType subst) ts)
-    | TypAdt(n)     -> TypAdt(n)
-    | TypDyn        -> TypDyn
+    | TypAdt(tvs, n)-> TypAdt(tvs, n)
+    | TypVarSocket _ -> failwith "copying type variable sockets is not possible"
 
 
 (* Create a type from a type scheme (tvs, t) by instantiating all the
@@ -202,11 +204,13 @@ let specialize level (TypeScheme(tvs, t)) : typename =
 let rec showType t : string =
     let rec pr t =
         match normType t with
-        | TypInt       -> "int"
-        | TypBool      -> "bool"
-        | TypStr       -> "string"
-        | TypDyn       -> "dynamic"
-        | TypAdt(name) -> name
+        | TypInt            -> "int"
+        | TypBool           -> "bool"
+        | TypStr            -> "string"
+        | TypAdt(tvs, name) -> 
+            match tvs with
+            | [] -> name
+            | _  -> sprintf "%s<%s>" name (System.String.Join(",", List.map showType tvs))
         | TypTpl(ts)   ->
              sprintf "(%s)"
                  (List.map(fun t -> pr t) ts
@@ -216,6 +220,7 @@ let rec showType t : string =
             | (NoLink name, _) -> name
             | _                -> failwith "showType impossible"
         | TypFun(t1, t2) -> sprintf "(%s -> %s)" <| pr t1 <| pr t2
+        | TypVarSocket _ -> failwith "showType cannot be used on type variable sockets"
     in pr t
 
 (* A type environment maps a program variable name to a typescheme *)
@@ -224,7 +229,22 @@ type tenv = typescheme env
 
 (* Type inference: tyinf e0 returns the type of e0, if any *)
 
-let rec tyinf e0 =
+let replaceSockets typ lvl =
+  let mappedSockets = ref Map.empty<string, typename>
+  let rec replace typ =
+    match typ with
+    | TypInt | TypStr | TypBool | TypVar _ -> typ
+    | TypFun(targs, tret) -> TypFun(replace targs, replace tret)
+    | TypTpl(ts) -> TypTpl(List.map replace ts)
+    | TypAdt(tvs, nm) -> TypAdt(List.map replace tvs, nm)
+    | TypVarSocket(tparam) -> if Map.containsKey tparam !mappedSockets
+                                    then Map.find tparam !mappedSockets
+                                    else let tvar = TypVar(newTypeVar lvl)
+                                         mappedSockets := Map.add tparam tvar !mappedSockets;
+                                         tvar
+  replace typ
+
+let rec tyinf e0 (types : typeenv) =
     (* (typ lvl env e) returns the type of e in env at level lvl *)
     let rec typ (lvl : int) (env : tenv) (e : expr) : typename =
         match e with
@@ -235,7 +255,7 @@ let rec tyinf e0 =
         | Prim(ope, e1, e2) ->
           let t1 = typ lvl env e1
           match (ope, t1, e2) with
-          | ("at", TypAdt(name), Var field) ->
+          | ("at", TypAdt(_, name), Var field) ->
               failwith "type inference for adts is not yet supported"
           | ("at", TypTpl(typs), Cst(Int i)) ->
               if 0 < i && i <= typs.Length
@@ -315,6 +335,16 @@ let rec tyinf e0 =
                 unify tr (typ lvl env' ret)
                 ) cases ;
             tr
+        | AdtConstr(nm) ->
+            let ((tvs, tn), args, guard) = Map.find nm types
+            let stvs = List.map TypVarSocket tvs
+            let tcret = TypAdt(stvs, tn)
+            let tconstr = 
+                match args with
+                | []        -> tcret
+                | [nm, tp]  -> TypFun(tp, tcret)
+                | _         -> TypFun(TypTpl (List.map snd args), tcret)
+            replaceSockets tconstr lvl
         | StrdLit(typ, _) -> failwithf "unparsed structured data literal of type %s" typ
         | _ -> failwithf "type inference is not yet supported for expr: %A" e
     and typPat (lvl : int) (pat : expr) : typename * (string * typescheme) list =
@@ -328,8 +358,35 @@ let rec tyinf e0 =
         | TplConstr(ps) ->
             let patTypRes = Array.map(fun p -> typPat lvl p) ps |> List.ofArray
             (TypTpl(List.map fst patTypRes), List.fold (@) [] (List.map snd patTypRes))
+        | AdtConstr(nm) ->
+             let ((tvs, tn), _, _) = Map.find nm types
+             let stvs = List.map TypVarSocket tvs
+             let t = replaceSockets <| TypAdt(stvs, tn) <| lvl
+             (t, [])
+        | Call(AdtConstr(nm), gargs) ->
+            let ((tvs, tn), args, guard) = Map.find nm types
+            let stvs = List.map TypVarSocket tvs
+            let tcret = TypAdt(stvs, tn)
+            let tconstr = 
+                match args with
+                | []        -> tcret
+                | [nm, tp]  -> TypFun(tp, tcret)
+                | _         -> TypFun(TypTpl (List.map snd args), tcret)
+            let tconstr = replaceSockets tconstr lvl
+            match (tconstr, gargs) with
+            | (TypFun(TypTpl(targs), tr), TplConstr(ps)) -> 
+                let patTypRes = Array.map(fun p -> typPat lvl p) ps |> List.ofArray
+                let (targs', pEnv) = (List.map fst patTypRes, List.fold (@) [] (List.map snd patTypRes))
+                List.iter (fun (t1, t2) -> unify t1 t2) (List.zip targs targs');
+                (tr, pEnv)
+            | (TypFun(targ, tr), p) ->
+                let (targ', pEnv) = typPat lvl p;
+                unify targ targ';
+                (tr, pEnv)
+            | _ -> failwith "Internal error: unknown result when replaced sockets in pattern match type inference"
+        | _ -> failwith "Illegal pattern in type inference"
     typ 0 [] e0
 
-let inferType e =
+let inferType e types =
     (tyvarno := 0;
-     showType (tyinf e));;
+     showType (tyinf e types));;

@@ -45,12 +45,12 @@
     <Compile Include="FbType.fs" />
     <Compile Include="FbEval.fs" />
     <Compile Include="FbInterpret.fs" />
-    <FsLex Include="FbLex.fsl">
+    <None Include="FbLex.fsl">
       <OtherFlags>--unicode</OtherFlags>
-    </FsLex>
-    <FsYacc Include="FbPar.fsy">
+    </None>
+    <None Include="FbPar.fsy">
       <Module>FbPar</Module>
-    </FsYacc>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.PowerPack">

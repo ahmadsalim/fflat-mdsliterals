@@ -202,7 +202,7 @@ let specialize level (TypeScheme(tvs, t)) : typename =
 (* Pretty-print type, using names 'a, 'b, ... for type variables *)
 
 let rec showType t : string =
-    let rec pr t =
+    let rec pr t showTplParen showFunParen =
         match normType t with
         | TypInt            -> "int"
         | TypBool           -> "bool"
@@ -210,18 +210,21 @@ let rec showType t : string =
         | TypAdt(tvs, name) -> 
             match tvs with
             | [] -> name
-            | _  -> sprintf "%s<%s>" name (System.String.Join(",", List.map showType tvs))
+            | _  -> sprintf "%s<%s>" name (System.String.Join(",", List.map (fun tv -> pr tv false false) tvs))
         | TypTpl(ts)   ->
-             sprintf "(%s)"
-                 (List.map(fun t -> pr t) ts
-                   |> List.reduce (fun str t -> sprintf "%s * %s" str t))
+             let innerTs = (List.map(fun t -> pr t true true) ts
+                              |> List.reduce (fun str t -> sprintf "%s * %s" str t))
+             if showTplParen then sprintf "(%s)" innerTs else innerTs
         | TypVar tyvar ->
           match !tyvar with
             | (NoLink name, _) -> name
             | _                -> failwith "showType impossible"
-        | TypFun(t1, t2) -> sprintf "(%s -> %s)" <| pr t1 <| pr t2
+        | TypFun(t1, t2) -> 
+            let innerT1 = pr t1 false true
+            let innerT2 = pr t2 false false
+            if showFunParen then sprintf "(%s -> %s)" innerT1 innerT2 else sprintf "%s -> %s" innerT1 innerT2
         | TypVarSocket _ -> failwith "showType cannot be used on type variable sockets"
-    in pr t
+    in pr t false false
 
 (* A type environment maps a program variable name to a typescheme *)
 
@@ -314,7 +317,7 @@ let rec tyinf e0 (types : typeenv) =
         | Fun(x, body) ->
            let xTyp = TypVar(newTypeVar lvl)
            let bodyEnv =  (x, TypeScheme([], xTyp))::env
-           typ lvl bodyEnv body
+           TypFun(xTyp, typ lvl bodyEnv body)
         | Call(eFun, eArg) ->
           let tf = typ lvl env eFun
           let tx = typ lvl env eArg

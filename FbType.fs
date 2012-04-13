@@ -247,7 +247,7 @@ let replaceSockets typ lvl =
                                          tvar
   replace typ
 
-let rec tyinf e0 (types : typeenv) =
+let rec tyinf e0 (env : tenv) (types : typeenv) =
     (* (typ lvl env e) returns the type of e in env at level lvl *)
     let rec typ (lvl : int) (env : tenv) (e : expr) : typename =
         match e with
@@ -388,8 +388,18 @@ let rec tyinf e0 (types : typeenv) =
                 (tr, pEnv)
             | _ -> failwith "Internal error: unknown result when replaced sockets in pattern match type inference"
         | _ -> failwith "Illegal pattern in type inference"
-    typ 0 [] e0
+    typ 0 env e0
 
 let inferType e types =
     (tyvarno := 0;
-     showType (tyinf e types));;
+     showType (tyinf e [] types));;
+
+
+let checkTypeDeclGuards ((_, ctors): datadecl) types = 
+    List.iter (fun (nm, fields, guard) ->
+        let env = List.fold (fun env (var, typ) -> (var, generalize 0 (replaceSockets typ 0))::env) [] fields
+        try
+            unify TypBool (tyinf guard env types)
+        with
+        | exn -> failwithf "Error `%s` in guard of constructor: %s" exn.Message nm
+    ) ctors

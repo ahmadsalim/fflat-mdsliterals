@@ -30,12 +30,18 @@ let mkStucturedDataLiteralParser (handledDataType : string) (resultDataTypes : d
 
 type Interpreter() =
   class
+    let registeredDecls = ref []
     let registeredTypes = ref Map.empty
     let strdLitParsers =
       new System.Collections.Generic.Dictionary<string, IStructuredDataLiteralParser>()
 
     member public this.RegisterLiteralParser (parser : IStructuredDataLiteralParser) : unit =
+      checkDecls (defaultAdts @ (List.ofSeq parser.ResultDataTypes))
+      let typeenv = List.fold(fun typeenv decl -> addDataDeclToEnv decl typeenv) Map.empty defaultAdts
+      let typeenv = Seq.fold (fun typeenv decl -> addDataDeclToEnv decl typeenv) typeenv parser.ResultDataTypes
+      Seq.iter(fun decl -> checkTypeDeclGuards decl typeenv) parser.ResultDataTypes
       registeredTypes := Seq.fold (fun typeenv decl -> addDataDeclToEnv decl typeenv) !registeredTypes parser.ResultDataTypes
+      registeredDecls := Seq.fold(fun decls decl -> decl::decls) !registeredDecls parser.ResultDataTypes
       strdLitParsers.Add(parser.HandledDataType, parser)
 
     member public this.ParseExpressionFromString (str : string) : expr =
@@ -128,7 +134,9 @@ type Interpreter() =
        let (decls, parsed) = this.ParseProgramFromString str
        let replaced = this.ResolveStructuredDataLiterals parsed
        let checkd = checkExpr replaced
+       checkDecls (!registeredDecls @ decls)
        let env = List.fold (fun types decl -> addDataDeclToEnv decl types) !registeredTypes decls
+       List.iter (fun decl -> checkTypeDeclGuards decl env) decls
        let typed = inferType checkd env 
        let ran = this.Run env checkd
        let prettied = this.PrettyPrintString ran

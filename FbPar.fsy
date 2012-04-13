@@ -81,8 +81,8 @@ TypeDeclParams:
 ;
 
 ConstrDecls:
-    ConstrDecl                               { $1::[]                                           }
-  | ConstrDecl Pipe_t ConstrDecls            { $1::$3                                           }
+    Pipe_t ConstrDecl                         { $2::[]                                           }
+  | Pipe_t ConstrDecl  ConstrDecls            { $2::$3                                           }
 ;
 
 ConstrDecl:

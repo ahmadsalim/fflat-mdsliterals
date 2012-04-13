@@ -15,7 +15,7 @@ let lexemeAsString lexbuf =
 
 
 
-(* Start of outermost comment currently being scanned *)
+(* Start of outermost comment currently being scanned *)                                      
 let commentStart = ref Position.Empty;
 
 let commentDepth = ref 0;  (* Current comment nesting *)

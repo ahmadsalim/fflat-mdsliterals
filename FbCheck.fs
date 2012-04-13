@@ -41,6 +41,42 @@ and checkPattern pat bound =
   (pat, !lBound')
 
 
+let checkTypeReferences (decls : datadecl list) = 
+    let socketCountMap = List.fold(fun m ((pms, name), _) -> Map.add name (List.length pms) m) Map.empty decls 
+    let rec checkReference tn ctor =
+        match tn with 
+        | TypInt | TypBool | TypStr | TypVarSocket _ -> ()
+        | TypVar _ -> failwith "Illegal typevar in constructor declaration"
+        | TypTpl(tps) -> List.iter(fun tp -> checkReference tp ctor) tps
+        | TypAdt(tps, nm) ->
+            if Map.containsKey nm socketCountMap 
+                then if List.length tps = Map.find nm socketCountMap 
+                        then List.iter(fun tp -> checkReference tp ctor) tps
+                        else failwithf "Datatype: %s does not take the given number of typevariables in constructor: %s" nm ctor
+                else failwithf "Unknown datatype: %s referenced in constructor: %s" nm ctor
+        | TypFun(t1, t2) -> checkReference t1 ctor; checkReference t2 ctor
+    List.iter(fun (_, ctors) ->  
+                List.iter(fun (ctor, fields, _) -> 
+                    List.iter(fun (_, typ) -> checkReference typ ctor) fields
+                ) ctors
+        ) decls
+
+let checkTypeParams (((pms, _), ctors) : datadecl) =
+    let rec checkTypeParamUse tn ctor =
+        match tn with
+        | TypInt | TypBool | TypStr -> ()
+        | TypVar _ -> failwith "Illegal typevar in constructor declaration"
+        | TypVarSocket(pm) -> if not <| List.exists(fun pm' -> pm' = pm) pms 
+                                   then failwithf "Unknown type parameter '%s used in constructor: %s" pm ctor
+        | TypTpl(tps) | TypAdt(tps, _) -> List.iter(fun tp -> checkTypeParamUse tp ctor) tps
+        | TypFun(t1, t2) -> checkTypeParamUse t1 ctor; checkTypeParamUse t2 ctor
+    List.iter(fun (ctor, fields, _) -> 
+                   List.iter(fun (_, typ) -> checkTypeParamUse typ ctor) fields ) ctors
+
+let checkDecls (decls : datadecl list) =
+    List.iter checkTypeParams decls
+    checkTypeReferences decls
+
 let rec checkStrdLit expr datatype =
    match expr with
    | Var _ | Cst _ | AdtConstr _  | WildCard  -> expr

@@ -2,7 +2,7 @@
 The page of this project is located at [http://ahmadsalim.github.com/fflat/](http://ahmadsalim.github.com/fflat/)
 
 ### Overview
-Fb is an ML-inspired programming langauge with support for literals of structured data (like XML, JSON, YAML etc.). The langauage is extensible with right to integration of new literal parsers, and allows pattern matching of the literal expressions if parsed correctly.
+Fb (pronounced *F Flat*) is an ML-inspired programming langauge with support for literals of structured data (like XML, JSON, YAML etc.). The langauage is extensible with right to integration of new literal parsers, and allows pattern matching of the literal expressions if parsed correctly.
 
 #### Example
 

@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>F♭ by ahmadsalim</title>
-    
+    <title>F? by ahmadsalim</title>
+
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/pygment_trac.css">
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
@@ -15,52 +15,67 @@
   <body>
     <div class="wrapper">
       <header>
-        <h1>F♭</h1>
+        <h1>F?</h1>
         <p>ML-like strong static functional language with support for modular structured data literals (like XML, JSON, YAML etc.)</p>
         <p class="view"><a href="https://github.com/ahmadsalim/fflat">View the Project on GitHub <small>ahmadsalim/fflat</small></a></p>
         <ul>
           <li><a href="https://github.com/ahmadsalim/fflat/zipball/master">Download <strong>ZIP File</strong></a></li>
           <li><a href="https://github.com/ahmadsalim/fflat/tarball/master">Download <strong>TAR Ball</strong></a></li>
-          <li><a href="https://github.com/ahmadsalim/fflat">Fork On <strong>GitHub</strong></a></li>
+          <li><a href="https://github.com/ahmadsalim/fflat">View On <strong>GitHub</strong></a></li>
         </ul>
       </header>
       <section>
         <h3>Overview</h3>
 
-<p>Fb is an ML-inspired programming langauge with support for literals of structured data (like XML, JSON, YAML etc.). The langauage is extensible with right to integration of new literal parsers, and allows pattern matching of the literal expressions if parsed correctly.</p>
+<p>Fb (pronounced <em>F Flat</em>) is an ML-inspired programming langauge with support for literals of structured data (like XML, JSON, YAML etc.). 
+The langauage is extensible with right to integration of new literal parsers, and allows pattern matching of the literal expressions if parsed correctly.</p>
 
 <h4>Example</h4>
 
 <div class="highlight">
 <pre><span class="k">let</span> <span class="n">a</span> <span class="o">=</span> <span class="o">[</span><span class="nc">XContent</span><span class="o">(%</span><span class="n">q</span><span class="o">{</span><span class="nc">Fantasy</span><span class="o">})]</span>
 <span class="k">in</span>
-    <span class="k">let</span> <span class="n">thedata</span> <span class="o">=</span>
-      <span class="o">%</span><span class="n">xml</span><span class="o">{&lt;</span><span class="n">book</span> <span class="n">id</span><span class="o">=</span><span class="s2">"bk105"</span><span class="o">&gt;</span>
-             <span class="o">&lt;</span><span class="n">author</span><span class="o">&gt;</span><span class="nc">Corets</span><span class="o">,</span> <span class="nc">Eva</span><span class="o">&lt;/</span><span class="n">author</span><span class="o">&gt;</span>
-             <span class="o">&lt;</span><span class="n">title</span><span class="o">&gt;</span><span class="nc">The</span> <span class="nc">Sundered</span> <span class="nc">Grail</span><span class="o">&lt;/</span><span class="n">title</span><span class="o">&gt;</span>
-             <span class="o">&lt;</span><span class="n">genre</span><span class="o">&gt;[</span><span class="n">a</span><span class="o">]&lt;/</span><span class="n">genre</span><span class="o">&gt;</span>
-             <span class="o">&lt;</span><span class="n">price</span><span class="o">&gt;</span><span class="mi">5</span><span class="o">.</span><span class="mi">95</span><span class="o">&lt;/</span><span class="n">price</span><span class="o">&gt;</span>
-             <span class="o">&lt;</span><span class="n">publish_date</span><span class="o">&gt;</span><span class="mi">2001</span><span class="o">-</span><span class="mi">09</span><span class="o">-</span><span class="mi">10</span><span class="o">&lt;/</span><span class="n">publish_date</span><span class="o">&gt;</span>
-             <span class="o">&lt;</span><span class="n">description</span><span class="o">&gt;</span><span class="nc">The</span> <span class="n">two</span> <span class="n">daughters</span> <span class="k">of</span> <span class="nc">Maeve</span><span class="o">,</span> <span class="n">half</span><span class="o">-</span><span class="n">sisters</span><span class="o">,</span>
-                          <span class="n">battle</span> <span class="n">one</span> <span class="n">another</span> <span class="k">for</span> <span class="n">control</span> <span class="k">of</span> <span class="nn">England</span><span class="p">.</span> <span class="nc">Sequel</span> <span class="k">to</span>
-                          <span class="nc">Oberon's</span> <span class="nn">Legacy</span><span class="p">.</span><span class="err">&lt;/</span><span class="n">description</span><span class="o">&gt;</span>
-      <span class="o">&lt;/</span><span class="n">book</span><span class="o">&gt;}</span>
-    <span class="k">in</span>
-      <span class="k">match</span> <span class="n">thedata</span> <span class="k">with</span>
-      <span class="o">|</span> <span class="o">%</span><span class="n">xml</span><span class="o">{&lt;</span><span class="n">book</span> <span class="o">[</span><span class="n">id</span><span class="o">]=</span><span class="k">'</span><span class="o">[</span><span class="n">idVal</span><span class="o">]</span><span class="k">'</span> <span class="o">[</span><span class="n">attrs</span><span class="o">]&gt;</span>
-               <span class="o">&lt;</span><span class="n">author</span><span class="o">&gt;[</span><span class="n">authorVal</span><span class="o">]&lt;/&gt;</span>
-               <span class="o">&lt;</span><span class="n">title</span><span class="o">&gt;[</span><span class="n">titleVal</span><span class="o">]&lt;/&gt;</span>
-               <span class="o">[</span><span class="n">restVal</span><span class="o">]</span>
-             <span class="o">&lt;/&gt;}</span> <span class="o">-&gt;</span>
-               <span class="k">let</span> <span class="n">jsonId</span> <span class="o">=</span> <span class="nc">JsString</span><span class="o">(</span><span class="n">idVal</span><span class="o">)</span>
-               <span class="ow">and</span> <span class="n">jsonAuthor</span> <span class="o">=</span> <span class="nc">JsString</span><span class="o">(</span><span class="k">match</span> <span class="n">authorVal</span> <span class="k">with</span> <span class="o">|</span> <span class="o">[</span><span class="nc">XContent</span><span class="o">(</span><span class="n">author</span><span class="o">)]</span> <span class="o">-&gt;</span> <span class="n">author</span><span class="o">)</span>
-               <span class="ow">and</span> <span class="n">jsonTitle</span> <span class="o">=</span> <span class="nc">JsString</span><span class="o">(</span><span class="k">match</span> <span class="n">titleVal</span> <span class="k">with</span> <span class="o">|</span> <span class="o">[</span><span class="nc">XContent</span><span class="o">(</span><span class="n">title</span><span class="o">)]</span> <span class="o">-&gt;</span> <span class="n">title</span><span class="o">)</span>
-               <span class="k">in</span>
-                 <span class="nc">Right</span> <span class="o">%</span><span class="n">json</span><span class="o">({</span> <span class="s2">"id"</span><span class="o">:</span> <span class="o">&lt;</span><span class="n">jsonId</span><span class="o">&gt;,</span>
-                               <span class="s2">"author"</span><span class="o">:</span> <span class="o">&lt;</span><span class="n">jsonAuthor</span><span class="o">&gt;,</span>
-                               <span class="s2">"title"</span><span class="o">:</span> <span class="o">&lt;</span><span class="n">jsonTitle</span><span class="o">&gt;</span> <span class="o">})</span>
-               <span class="k">end</span>
-      <span class="o">|</span> <span class="o">_</span>                             <span class="o">-&gt;</span> <span class="nc">Left</span> <span class="s2">"Failed"</span>
+  <span class="k">let</span> <span class="n">thedata</span> <span class="o">=</span>
+    <span class="o">%</span><span class="n">xml</span><span class="o">{</span>
+      <span class="o">&lt;</span><span class="n">book</span> <span class="n">id</span><span class="o">=</span><span class="s2">"bk105"</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">author</span><span class="o">&gt;</span><span class="nc">Corets</span><span class="o">,</span> <span class="nc">Eva</span><span class="o">&lt;/</span><span class="n">author</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">title</span><span class="o">&gt;</span><span class="nc">The</span> <span class="nc">Sundered</span> <span class="nc">Grail</span><span class="o">&lt;/</span><span class="n">title</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">genre</span><span class="o">&gt;[</span><span class="n">a</span><span class="o">]&lt;/</span><span class="n">genre</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">price</span><span class="o">&gt;</span><span class="mi">5</span><span class="o">.</span><span class="mi">95</span><span class="o">&lt;/</span><span class="n">price</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">publish_date</span><span class="o">&gt;</span><span class="mi">2001</span><span class="o">-</span><span class="mi">09</span><span class="o">-</span><span class="mi">10</span><span class="o">&lt;/</span><span class="n">publish_date</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">description</span><span class="o">&gt;</span>
+          <span class="nc">The</span> <span class="n">two</span> <span class="n">daughters</span> <span class="k">of</span> <span class="nc">Maeve</span><span class="o">,</span> <span class="n">half</span><span class="o">-</span><span class="n">sisters</span><span class="o">,</span>
+          <span class="n">battle</span> <span class="n">one</span> <span class="n">another</span> <span class="k">for</span> <span class="n">control</span> <span class="k">of</span> <span class="nn">England</span><span class="p">.</span> 
+          <span class="nc">Sequel</span> <span class="k">to</span> <span class="nc">Oberon's</span> <span class="nc">Legacy</span>
+        <span class="o">&lt;/</span><span class="n">description</span><span class="o">&gt;</span>
+      <span class="o">&lt;/</span><span class="n">book</span><span class="o">&gt;</span>
+    <span class="o">}</span>
+  <span class="k">in</span>
+    <span class="k">match</span> <span class="n">thedata</span> <span class="k">with</span>
+    <span class="o">|</span> <span class="o">%</span><span class="n">xml</span><span class="o">{</span>
+        <span class="o">&lt;</span><span class="n">book</span> <span class="o">[</span><span class="n">id</span><span class="o">]=</span><span class="k">'</span><span class="o">[</span><span class="n">idVal</span><span class="o">]</span><span class="k">'</span> <span class="o">[</span><span class="n">attrs</span><span class="o">]&gt;</span>
+          <span class="o">&lt;</span><span class="n">author</span><span class="o">&gt;[</span><span class="n">authorVal</span><span class="o">]&lt;/&gt;</span>
+          <span class="o">&lt;</span><span class="n">title</span><span class="o">&gt;[</span><span class="n">titleVal</span><span class="o">]&lt;/&gt;</span>
+          <span class="o">[</span><span class="n">restVal</span><span class="o">]</span>
+        <span class="o">&lt;/&gt;</span>
+      <span class="o">}</span>   <span class="o">-&gt;</span>
+             <span class="k">let</span> <span class="n">jsonId</span> <span class="o">=</span> 
+               <span class="nc">JsString</span><span class="o">(</span><span class="n">idVal</span><span class="o">)</span>
+             <span class="ow">and</span> <span class="n">jsonAuthor</span> <span class="o">=</span> 
+               <span class="nc">JsString</span><span class="o">(</span><span class="k">match</span> <span class="n">authorVal</span> <span class="k">with</span> 
+                        <span class="o">|</span> <span class="o">[</span><span class="nc">XContent</span><span class="o">(</span><span class="n">author</span><span class="o">)]</span> <span class="o">-&gt;</span> <span class="n">author</span><span class="o">)</span>
+             <span class="ow">and</span> <span class="n">jsonTitle</span> <span class="o">=</span> 
+               <span class="nc">JsString</span><span class="o">(</span><span class="k">match</span> <span class="n">titleVal</span> <span class="k">with</span> 
+                        <span class="o">|</span> <span class="o">[</span><span class="nc">XContent</span><span class="o">(</span><span class="n">title</span><span class="o">)]</span> <span class="o">-&gt;</span> <span class="n">title</span><span class="o">)</span>
+             <span class="k">in</span>
+               <span class="nc">Right</span> <span class="o">%</span><span class="n">json</span><span class="o">(</span>
+               <span class="o">{</span> 
+                 <span class="s2">"id"</span><span class="o">:</span> <span class="o">&lt;</span><span class="n">jsonId</span><span class="o">&gt;,</span>
+                 <span class="s2">"author"</span><span class="o">:</span> <span class="o">&lt;</span><span class="n">jsonAuthor</span><span class="o">&gt;,</span>
+                 <span class="s2">"title"</span><span class="o">:</span> <span class="o">&lt;</span><span class="n">jsonTitle</span><span class="o">&gt;</span> 
+               <span class="o">})</span>
+             <span class="k">end</span>
+      <span class="o">|</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nc">Left</span> <span class="s2">"Failed"</span>
     <span class="k">end</span>
 <span class="k">end</span>
 </pre>
@@ -78,7 +93,7 @@
 <h3>Authors and Contributors</h3>
 
 <p>The main author behind this project is Ahmad Salim AlSibahi (<a href="https://github.com/ahmadsalim" class="user-mention">@ahmadsalim</a>).
-The language and compiler is based on Peter Sestoft(<a href="https://github.com/sestoft" class="user-mention">@sestoft</a>)'s µML langauge.</p>
+The language and compiler is based on Peter Sestoft(<a href="https://github.com/sestoft" class="user-mention">@sestoft</a>)'s �ML langauge.</p>
       </section>
       <footer>
         <p>This project is maintained by <a href="https://github.com/ahmadsalim">ahmadsalim</a></p>

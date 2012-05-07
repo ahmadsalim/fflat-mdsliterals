@@ -185,7 +185,7 @@ let rec copyType subst t : typename =
     | TypBool       -> TypBool
     | TypStr        -> TypStr
     | TypTpl(ts)    -> TypTpl(List.map(copyType subst) ts)
-    | TypAdt(tvs, n)-> TypAdt(tvs, n)
+    | TypAdt(tvs, n)-> TypAdt(List.map(copyType subst) tvs, n)
     | TypVarSocket _ -> failwith "copying type variable sockets is not possible"
 
 

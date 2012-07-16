@@ -1,0 +1,59 @@
+{
+ (*
+    Lexing specification for Json data literals
+  *)
+
+module JsonLex
+
+open Microsoft.FSharp.Text.Lexing
+open JsonPar;
+open FbAst;
+
+let lexemeAsString lexbuf =
+    LexBuffer<char>.LexemeString lexbuf
+
+let unescapeString (str : string) =
+    str
+     .Replace("\\\"", "\"")
+     .Replace("\\\\", "\\")
+     .Replace("\\/", "/")
+     .Replace("\\b", "\b")
+     .Replace("\\f", "\f")
+     .Replace("\\n", "\n")
+     .Replace("\\r", "\r")
+     .Replace("\\t", "\t")
+
+}
+
+let whitespace = ['\t' ' ']
+let socketname = ['a'-'z']['a'-'z''A'-'Z''0'-'9''_']*'?'? 
+let char = [^ '"' '\\' '/' '\n' '\b' '\r' '\t'] | "\\\"" | "\\\\" | "\\/" | "\\b" | "\\f" | "\\n" | "\\r" | "\\t"
+let str = '"' char* '"'
+let int =  '0' | ['1'-'9'] ['0'-'9']* 
+
+
+rule Token = parse
+      '\r'                                                  { Token lexbuf                                                   }
+    | '\n'                                                  {
+                                                                lexbuf.EndPos <- lexbuf.EndPos.NextLine;
+                                                                Token lexbuf
+                                                            }
+    | whitespace* eof                                       { Eof_t }
+    | whitespace* '{'                                       { LBrc_t }
+    | whitespace* '}'                                       { RBrc_t }
+    | whitespace* '['                                       { LBra_t }
+    | whitespace* ']'                                       { RBra_t }
+    | whitespace* ','                                       { Comma_t }
+    | whitespace* ':'                                       { Colon_t }
+    | whitespace* "null"                                    { Null_t }
+    | whitespace* "true"                                    { Bool_t true }
+    | whitespace* "false"                                   { Bool_t false }
+    | whitespace* int                                       { Int_t (System.Int32.Parse((lexemeAsString lexbuf).Trim())) }
+    | whitespace* str                                       {
+                                                              let s = (lexemeAsString lexbuf).Trim()
+                                                              in String_t (s.Substring(1, s.Length - 2))
+                                                            }
+    | whitespace* '<' socketname '>'                        { 
+                                                              let s = (lexemeAsString lexbuf).Trim()
+                                                              in Socket_t (s.Substring(1, s.Length - 2))
+                                                            }

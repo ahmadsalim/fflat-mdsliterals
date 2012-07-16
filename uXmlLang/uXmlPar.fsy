@@ -1,0 +1,91 @@
+%{
+ (*
+    Parsing specification for uXml data literals (XML inspired mini data language)
+    
+    AST in Fb:
+
+    type xml_attribute = 
+        | XAttribute of key : string * value : string
+    type xml =
+        | XElement of tagname : string * attributes : list<xml_attribute> * content : list<xml>
+        | XContent of data : string
+  *)
+open FbAst
+open uXmlData
+
+let getTag = 
+    function
+    | String s -> Cst(Str s)
+    | Socket s -> Quote s
+
+let matchTags st et =
+    match (st, et) with
+    | (_, String "")                      -> getTag st
+    | (String s1, String s2) when s1 = s2 -> getTag st
+    | (Socket s1, Socket s2) when s1 = s2 -> getTag st
+    | (Socket s, _) -> failwithf "unmatched socket tag of type: %s" s 
+    | (String s, _) -> failwithf "unmatched tag of type: %s" s
+%}
+
+%token<string> StartTagBegin_t  StartTagBeginSocket_t
+%token         StartTagFinish_t StartTagInlineFinish_t
+%token<string> EndTag_t         EndTagSocket_t
+%token<string> AttributeKey_t   AttributeKeySocket_t
+%token<string> AttributeValue_t AttributeValueSocket_t
+%token<string> Content_t        ContentSocket_t             
+%token         Eof_t
+%token         Eq_t          
+
+%type<FbAst.expr> Main
+%start Main
+
+%%
+
+Main:
+    Element Eof_t { $1 }
+;
+
+Element:
+    StartTagBegin Attributes StartTagFinish_t Content EndTag { Call(AdtConstr "XElement", TplConstr [| matchTags $1 $5; $2; $4  |]) }
+  | StartTagBegin Attributes StartTagInlineFinish_t          { Call(AdtConstr "XElement", TplConstr [| getTag $1; $2; mkList [] |]) }
+;
+
+StartTagBegin:
+    StartTagBegin_t                                          { String $1 }
+  | StartTagBeginSocket_t                                    { Socket $1 }
+;
+
+EndTag:
+    EndTag_t                                                 { String $1 }
+  | EndTagSocket_t                                           { Socket $1 }
+;
+
+Attributes:
+    /* empty */                                              { mkList [] }
+  | AttributeKeySocket_t                                     { Quote $1 }
+  | Attribute Attributes                                     { Call(AdtConstr "@Cons", TplConstr [| $1; $2 |]) }
+;
+
+Attribute:
+    AttributeKey Eq_t AttributeValue                         { Call(AdtConstr "XAttribute", TplConstr [| $1; $3 |]) }
+;
+
+AttributeKey:
+    AttributeKey_t                                           { Cst(Str $1) }
+  | AttributeKeySocket_t                                     { Quote $1 }       
+;
+
+AttributeValue:
+    AttributeValue_t                                         { Cst(Str $1) }
+  | AttributeValueSocket_t                                   { Quote $1 }
+;
+
+Content:
+    /* empty */                                              { mkList [] }
+  | ContentSocket_t                                          { Quote $1 }
+  | Content_t Content                                        { 
+                                                               Call(AdtConstr "@Cons", 
+                                                                    TplConstr [| Call(AdtConstr "XContent", Cst(Str $1)); $2 |]) 
+                                                             }
+  | Element Content                                          { Call(AdtConstr "@Cons", TplConstr [| $1; $2 |])}
+;

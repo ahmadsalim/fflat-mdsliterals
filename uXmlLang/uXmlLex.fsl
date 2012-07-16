@@ -1,0 +1,117 @@
+{
+ (*
+    Lexing specification for uXml data literals (XML inspired mini data language)
+  *)
+
+module uXmlLex
+
+open Microsoft.FSharp.Text.Lexing
+open uXmlPar;
+open FbAst;
+
+let lexemeAsString lexbuf =
+    LexBuffer<char>.LexemeString lexbuf
+
+let cache = new System.Collections.Generic.Queue<token>()
+
+let unescapeXml (str : string) =
+    str
+     .Replace("&quot;", "\"")
+     .Replace("&apos;", "'")
+     .Replace("&lt;", "<")
+     .Replace("&gt;", ">")
+     .Replace("&lbra;", "[")
+     .Replace("&rbra;", "]")
+     .Replace("&amp;", "&")
+
+}
+
+let whitespace = ['\t' ' ']
+let xmlname = ['a'-'z' 'A'-'Z' '_']['a'-'z' 'A'-'Z' '0'-'9' '_' '-' '.']*
+let content = [^ '<' '&' '[' ']']
+let value = '\'' [^ '<' '&' '[' ']' '\'']* '\'' | '"' [^ '<' '&' '[' ']' '"']* '"'
+let socketname = ['a'-'z']['a'-'z''A'-'Z''0'-'9''_']*'?'? 
+
+rule ScanXml = parse
+      '\r'                                                  { ScanXml lexbuf                                                   }
+    | '\n'                                                  {
+                                                                lexbuf.EndPos <- lexbuf.EndPos.NextLine;
+                                                                ScanXml lexbuf
+                                                            }
+    | eof                                                   { cache.Enqueue(Eof_t)                                           }
+    | whitespace* '<' '[' socketname ']'                    {
+                                                                let str = (lexemeAsString lexbuf).Trim()
+                                                                cache.Enqueue(StartTagBeginSocket_t (str.Substring(2, str.Length - 3)));
+                                                                ScanInTag lexbuf
+                                                            }
+
+    | whitespace* '<' xmlname                               {
+                                                                let str = (lexemeAsString lexbuf).Trim()
+                                                                cache.Enqueue(StartTagBegin_t (str.Substring(1, str.Length - 1)));
+                                                                ScanInTag lexbuf
+                                                            }
+    | whitespace* '<' '/' '[' socketname ']' '>'            {
+                                                                let str = (lexemeAsString lexbuf).Trim()
+                                                                cache.Enqueue(EndTagSocket_t (str.Substring(3, str.Length - 5)));
+                                                            }
+    | whitespace* '<' '/' xmlname? '>'                      {
+                                                                let str = (lexemeAsString lexbuf).Trim()
+                                                                cache.Enqueue(EndTag_t (str.Substring(2, str.Length - 3)));  
+                                                            }
+    | whitespace* '[' socketname ']'                        {
+                                                                let content = (lexemeAsString lexbuf).Trim()
+                                                                cache.Enqueue(ContentSocket_t (content.Substring(1, content.Length - 2)))
+                                                            }
+    | content+                                              {
+                                                                let content = lexemeAsString lexbuf
+                                                                if System.String.IsNullOrWhiteSpace(content) then ScanXml lexbuf
+                                                                else cache.Enqueue(Content_t(unescapeXml content));
+                                                            }
+    | whitespace+                                           { ScanXml lexbuf }
+and ScanInTag = parse 
+      '\r'                                                  { ScanInTag lexbuf                                                   }
+    | '\n'                                                  {
+                                                                lexbuf.EndPos <- lexbuf.EndPos.NextLine;
+                                                                ScanInTag lexbuf
+                                                            }
+    | whitespace* xmlname                                   {
+                                                                cache.Enqueue(AttributeKey_t((lexemeAsString lexbuf).Trim()));
+                                                                ScanInTag lexbuf
+                                                            }
+    | whitespace* '[' socketname ']'                        {
+                                                                let str = (lexemeAsString lexbuf).Trim()
+                                                                cache.Enqueue(AttributeKeySocket_t (str.Substring(1, str.Length - 2)));
+                                                                ScanInTag lexbuf
+                                                            }
+    | whitespace* '='                                       {
+                                                                cache.Enqueue(Eq_t);
+                                                                ScanInTag lexbuf
+                                                            }
+    | whitespace* value                                     {
+                                                                let str = (lexemeAsString lexbuf).Trim()
+                                                                cache.Enqueue(AttributeValue_t 
+                                                                       (unescapeXml (str.Substring(1, str.Length - 2))));
+                                                                ScanInTag lexbuf
+                                                            }
+    | whitespace* '\'' '[' socketname ']' '\''              {
+                                                                let str = (lexemeAsString lexbuf).Trim()
+                                                                cache.Enqueue(AttributeValueSocket_t
+                                                                 (unescapeXml (str.Substring(2, str.Length - 4))));
+                                                                ScanInTag lexbuf
+                                                            }
+    | whitespace* '"' '[' socketname ']' '"'                {
+                                                                let str = (lexemeAsString lexbuf).Trim()
+                                                                cache.Enqueue(AttributeValueSocket_t
+                                                                 (unescapeXml (str.Substring(2, str.Length - 4))));
+                                                                ScanInTag lexbuf
+                                                            }
+    | whitespace* '>'                                       { cache.Enqueue(StartTagFinish_t) }
+    | whitespace* "/>"                                      { cache.Enqueue(StartTagInlineFinish_t) }
+    | whitespace+                                           { ScanInTag lexbuf }
+
+{
+let Token lexbuf = 
+    if cache.Count > 0 
+        then cache.Dequeue()
+        else ScanXml lexbuf; cache.Dequeue()
+}

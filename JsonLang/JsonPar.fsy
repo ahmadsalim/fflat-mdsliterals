@@ -1,0 +1,84 @@
+%{
+ (*
+    Parsing specification for Json data literals
+    
+    AST in Fb:
+
+    type json_pair = 
+      | JsPair of key : string * value : json
+
+    type json =
+      | JsObject of members : list<json_pair>
+      | JsArray of elements : list<json>
+      | JsString of value : string
+      | JsInteger of value : int
+      | JsBoolean of value : bool
+      | JsNull
+  *)
+open FbAst
+
+%}
+
+%token<string> Socket_t
+
+%token<string> String_t
+%token<int> Int_t
+%token<bool> Bool_t
+%token Null_t
+
+%token Comma_t Colon_t 
+%token LBra_t RBra_t 
+%token LBrc_t RBrc_t
+%token Eof_t
+
+%type<FbAst.expr> Main
+
+%start Main
+
+%%
+
+Main:
+  Object Eof_t                { $1 }
+;
+
+Object:
+  LBrc_t RBrc_t               { Call(AdtConstr "JsObject", mkList []) }
+| LBrc_t Members RBrc_t       { Call(AdtConstr "JsObject", $2) }
+;
+
+Members:
+  Pair                        { mkList [$1] }
+| Socket_t                    { Quote $1 }
+| Pair Comma_t Members        { Call(AdtConstr "@Cons", TplConstr [| $1; $3 |])}
+;
+
+Pair:
+  Key Colon_t Value           { Call(AdtConstr "JsPair", TplConstr [| $1; $3 |]) }
+| Key Colon_t Socket_t        { Call(AdtConstr "JsPair", TplConstr [| $1; Quote $3 |]) }
+;
+
+Key:
+  Socket_t                    { Quote $1 }
+| String_t                    { Cst(Str $1) }
+;
+
+Array:
+  LBra_t RBra_t               { Call(AdtConstr "JsArray", mkList []) }
+| LBra_t Elements RBra_t      { Call(AdtConstr "JsArray", $2) }
+;
+
+Elements:
+  Socket_t                    { Quote $1 }
+| Value                       { mkList [$1] }
+| Value Comma_t Elements      { Call(AdtConstr "@Cons", TplConstr [| $1; $3 |]) }
+| Socket_t Comma_t Elements   { Call(AdtConstr "@Cons", TplConstr [| Quote $1; $3 |]) }
+;
+
+Value:
+  String_t                    { Call(AdtConstr "JsString", Cst(Str $1)) }
+| Int_t                       { Call(AdtConstr "JsInteger", Cst(Int $1)) }
+| Object                      { $1 }
+| Array                       { $1 }
+| Bool_t                      { Call(AdtConstr "JsBoolean", Cst(Bool $1)) }
+| Null_t                      { AdtConstr "JsNull" }
+;

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=640">
+
+    <link rel="stylesheet" href="stylesheets/core.css" media="screen">
+    <link rel="stylesheet" href="stylesheets/mobile.css" media="handheld, only screen and (max-device-width:640px)">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+
+    <script type="text/javascript" src="javascripts/modernizr.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script type="text/javascript" src="javascripts/headsmart.min.js"></script>
+    <script type="text/javascript">
+      $(document).ready(function () {
+        $('#main_content').headsmart()
+      })
+    </script>
+    <title>Fb with Modular Structured Data Literals by ahmadsalim</title>
+  </head>
+
+  <body>
+    <a id="forkme_banner" href="https://github.com/ahmadsalim/fflat-mdsliterals">View on GitHub</a>
+    <div class="shell">
+
+      <header>
+        <span class="ribbon-outer">
+          <span class="ribbon-inner">
+            <h1>Fb with Modular Structured Data Literals</h1>
+            <h2>Extension of Fb with support for modular structured data literals (like XML, JSON, YAML etc.)</h2>
+          </span>
+          <span class="left-tail"></span>
+          <span class="right-tail"></span>
+        </span>
+      </header>
+
+      <section id="downloads">
+        <span class="inner">
+          <a href="https://github.com/ahmadsalim/fflat-mdsliterals/zipball/master" class="zip"><em>download</em> .ZIP</a><a href="https://github.com/ahmadsalim/fflat-mdsliterals/tarball/master" class="tgz"><em>download</em> .TGZ</a>
+        </span>
+      </section>
+
+
+      <span class="banner-fix"></span>
+
+
+      <section id="main_content">
+        <h3>
+<a name="overview" class="anchor" href="#overview"><span class="octicon octicon-link"></span></a>Overview</h3>
+
+<p>Modular Structured Data Literals extend <a href="http://ahmadsalim.github.com/fflat/">Fb</a> with the ability to support literals of various kinds of structured data, such as XML, JSON and YAML.
+This extension allows integration of new literal parsers, and supports both construction of and pattern matching on literal expressions.</p>
+
+<h4>
+<a name="example" class="anchor" href="#example"><span class="octicon octicon-link"></span></a>Example</h4>
+
+<div class="highlight highlight-ocaml"><pre><span class="k">let</span> <span class="n">a</span> <span class="o">=</span> <span class="o">[</span><span class="nc">XContent</span><span class="o">(%</span><span class="n">q</span><span class="o">{</span><span class="nc">Fantasy</span><span class="o">})]</span>
+<span class="k">in</span>
+  <span class="k">let</span> <span class="n">thedata</span> <span class="o">=</span>
+    <span class="o">%</span><span class="n">xml</span><span class="o">{</span>
+      <span class="o">&lt;</span><span class="n">book</span> <span class="n">id</span><span class="o">=</span><span class="s2">"bk105"</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">author</span><span class="o">&gt;</span><span class="nc">Corets</span><span class="o">,</span> <span class="nc">Eva</span><span class="o">&lt;/</span><span class="n">author</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">title</span><span class="o">&gt;</span><span class="nc">The</span> <span class="nc">Sundered</span> <span class="nc">Grail</span><span class="o">&lt;/</span><span class="n">title</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">genre</span><span class="o">&gt;[</span><span class="n">a</span><span class="o">]&lt;/</span><span class="n">genre</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">price</span><span class="o">&gt;</span><span class="mi">5</span><span class="o">.</span><span class="mi">95</span><span class="o">&lt;/</span><span class="n">price</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">publish_date</span><span class="o">&gt;</span><span class="mi">2001</span><span class="o">-</span><span class="mi">09</span><span class="o">-</span><span class="mi">10</span><span class="o">&lt;/</span><span class="n">publish_date</span><span class="o">&gt;</span>
+        <span class="o">&lt;</span><span class="n">description</span><span class="o">&gt;</span>
+          <span class="nc">The</span> <span class="n">two</span> <span class="n">daughters</span> <span class="k">of</span> <span class="nc">Maeve</span><span class="o">,</span> <span class="n">half</span><span class="o">-</span><span class="n">sisters</span><span class="o">,</span>
+          <span class="n">battle</span> <span class="n">one</span> <span class="n">another</span> <span class="k">for</span> <span class="n">control</span> <span class="k">of</span> <span class="nn">England</span><span class="p">.</span> 
+          <span class="nc">Sequel</span> <span class="k">to</span> <span class="nc">Oberon's</span> <span class="nc">Legacy</span>
+        <span class="o">&lt;/</span><span class="n">description</span><span class="o">&gt;</span>
+      <span class="o">&lt;/</span><span class="n">book</span><span class="o">&gt;</span>
+    <span class="o">}</span>
+  <span class="k">in</span>
+    <span class="k">match</span> <span class="n">thedata</span> <span class="k">with</span>
+    <span class="o">|</span> <span class="o">%</span><span class="n">xml</span><span class="o">{</span>
+        <span class="o">&lt;</span><span class="n">book</span> <span class="o">[</span><span class="n">id</span><span class="o">]=</span><span class="k">'</span><span class="o">[</span><span class="n">idVal</span><span class="o">]</span><span class="k">'</span> <span class="o">[</span><span class="n">attrs</span><span class="o">]&gt;</span>
+          <span class="o">&lt;</span><span class="n">author</span><span class="o">&gt;[</span><span class="n">authorVal</span><span class="o">]&lt;/&gt;</span>
+          <span class="o">&lt;</span><span class="n">title</span><span class="o">&gt;[</span><span class="n">titleVal</span><span class="o">]&lt;/&gt;</span>
+          <span class="o">[</span><span class="n">restVal</span><span class="o">]</span>
+        <span class="o">&lt;/&gt;</span>
+      <span class="o">}</span>   <span class="o">-&gt;</span>
+             <span class="k">let</span> <span class="n">jsonId</span> <span class="o">=</span> 
+               <span class="nc">JsString</span><span class="o">(</span><span class="n">idVal</span><span class="o">)</span>
+             <span class="ow">and</span> <span class="n">jsonAuthor</span> <span class="o">=</span> 
+               <span class="nc">JsString</span><span class="o">(</span><span class="k">match</span> <span class="n">authorVal</span> <span class="k">with</span> 
+                        <span class="o">|</span> <span class="o">[</span><span class="nc">XContent</span><span class="o">(</span><span class="n">author</span><span class="o">)]</span> <span class="o">-&gt;</span> <span class="n">author</span><span class="o">)</span>
+             <span class="ow">and</span> <span class="n">jsonTitle</span> <span class="o">=</span> 
+               <span class="nc">JsString</span><span class="o">(</span><span class="k">match</span> <span class="n">titleVal</span> <span class="k">with</span> 
+                        <span class="o">|</span> <span class="o">[</span><span class="nc">XContent</span><span class="o">(</span><span class="n">title</span><span class="o">)]</span> <span class="o">-&gt;</span> <span class="n">title</span><span class="o">)</span>
+             <span class="k">in</span>
+               <span class="nc">Right</span> <span class="o">%</span><span class="n">json</span><span class="o">(</span>
+               <span class="o">{</span> 
+                 <span class="s2">"id"</span><span class="o">:</span> <span class="o">&lt;</span><span class="n">jsonId</span><span class="o">&gt;,</span>
+                 <span class="s2">"author"</span><span class="o">:</span> <span class="o">&lt;</span><span class="n">jsonAuthor</span><span class="o">&gt;,</span>
+                 <span class="s2">"title"</span><span class="o">:</span> <span class="o">&lt;</span><span class="n">jsonTitle</span><span class="o">&gt;</span> 
+               <span class="o">})</span>
+             <span class="k">end</span>
+      <span class="o">|</span> <span class="o">_</span> <span class="o">-&gt;</span> <span class="nc">Left</span> <span class="s2">"Failed"</span>
+    <span class="k">end</span>
+<span class="k">end</span>
+</pre></div>
+
+<h3>
+<a name="running-the-interpreter" class="anchor" href="#running-the-interpreter"><span class="octicon octicon-link"></span></a>Running the interpreter</h3>
+
+<p>To interpret Fb programs with Modular Structured Data Literals, create a new interpreter instance in an F# script and use either ParseProgramFromString (using the program as a string) or ParseProgramFromFile (using the filename containing the program).</p>
+
+<h3>
+<a name="registering-new-data-literal-parser" class="anchor" href="#registering-new-data-literal-parser"><span class="octicon octicon-link"></span></a>Registering new data literal parser</h3>
+
+<p>To use a literal parser implement the IStructuredDataLiteralParser interface and use the interpreter's RegisterLiteralParser method.</p>
+
+<h3>
+<a name="authors-and-contributors" class="anchor" href="#authors-and-contributors"><span class="octicon octicon-link"></span></a>Authors and Contributors</h3>
+
+<p>The main author behind this project is Ahmad Salim AlSibahi (<a href="https://github.com/ahmadsalim" class="user-mention">@ahmadsalim</a>).
+The language and compiler is based on Peter Sestoft(<a href="https://github.com/sestoft" class="user-mention">@sestoft</a>)'s µML langauge.</p>
+      </section>
+
+      <footer>
+        <span class="ribbon-outer">
+          <span class="ribbon-inner">
+            <p>this project by <a href="https://github.com/ahmadsalim">ahmadsalim</a> can be found on <a href="https://github.com/ahmadsalim/fflat-mdsliterals">GitHub</a></p>
+          </span>
+          <span class="left-tail"></span>
+          <span class="right-tail"></span>
+        </span>
+        <p>Generated with <a href="http://pages.github.com">GitHub Pages</a> using Merlot</p>
+        <span class="octocat"></span>
+      </footer>
+
+    </div>
+
+    
+  </body>
+</html>

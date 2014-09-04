@@ -1,9 +1,9 @@
 ### Main Page
-The page of this project is located at [http://ahmadsalim.github.com/fflat/](http://ahmadsalim.github.com/fflat/)
+The page of this project is located at [http://ahmadsalim.github.com/fflat-mdsliterals/](http://ahmadsalim.github.com/fflat-mdsliterals/)
 
 ### Overview
-Fb (pronounced *F Flat*) is an ML-inspired programming langauge with support for literals of structured data (like XML, JSON, YAML etc.). 
-The langauage is extensible with right to integration of new literal parsers, and allows pattern matching of the literal expressions if parsed correctly.
+Modular Structured Data Literals extend [Fb](http://ahmadsalim.github.com/fflat/) with the ability to support literals of various kinds of structured data, such as XML, JSON and YAML.
+This extension allows integration of new literal parsers, and supports both construction of and pattern matching on literal expressions.
 
 #### Example
 
@@ -56,7 +56,7 @@ end
 ```
 
 ### Running the interpreter
-To interpret Fb programs, create a new interpreter instance in an F# script and use either ParseProgramFromString (using the program as a string) or ParseProgramFromFile (using the filename containing the program).
+To interpret Fb programs with Modular Structured Data Literals, create a new interpreter instance in an F# script and use either ParseProgramFromString (using the program as a string) or ParseProgramFromFile (using the filename containing the program).
 
 ### Registering new data literal parser
 To use a literal parser implement the IStructuredDataLiteralParser interface and use the interpreter's RegisterLiteralParser method.
